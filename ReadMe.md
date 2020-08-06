@@ -7,6 +7,8 @@
 	My config:
 	/opt/bin/python3.7 /opt/freeware/sbin/metraixbeat -c /etc/metraixbeat/Parameters.conf -l /var/adm/ras/metraixbeat/
 
+### Main Dashboard screenshot
+
 <img
 src="./LPAR-Main-Dashboard.png"
 raw=true

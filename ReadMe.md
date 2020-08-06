@@ -5,7 +5,7 @@
 	metraixbeat -c <Parameters.conf file path> -l <Logs directory path>
 	
 	My config:
-	/opt/bin/python3.7 /opt/freeware/sbin/metraixbeat -c /etc/metraixbeat/Parameters.conf -l /var/adm/ras/metraixbeat/
+	/opt/bin/python3 /opt/freeware/sbin/metraixbeat -c /etc/metraixbeat/Parameters.conf -l /var/adm/ras/metraixbeat/
 
 ### Main Dashboard screenshot
 
@@ -34,7 +34,7 @@ style="margin-right: 10px;"
 
 
 ### Fully based on Python3 
-	Tested only with 3.7 but should work with other Python3 versions
+	Tested only with 3.7 and 3.8 but should work with other Python3 versions
 	Only 2 dependencies to install from PIP before using it
 		requests 	(pip install requests) for handling easily and properly TCP requests
 		pingparsing 	(pip install pingparsing) to enable the "Ping Plotter" plugin

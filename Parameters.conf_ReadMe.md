@@ -1,6 +1,6 @@
 ### JSON format is matching with the Metricbeat version stored in ELKMonitoringVersion
 	Should not be changed until metraixbeat is tested for different ELK versions
-	"ELKMonitoringVersion": "7.5.2"
+	"ELKMonitoringVersion": "7.7.0"
 
 
 ### JSON format is matching with the Metricbeat version stored in ECSVersion

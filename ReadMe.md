@@ -1,11 +1,5 @@
 # "Metraixbeat" daemon description:
 
-### Command line to execute (as root)
-	Usage:
-	metraixbeat -c <Parameters.conf file path> -l <Logs directory path>
-	
-	My config:
-	/opt/bin/python3 /opt/freeware/sbin/metraixbeat -c /etc/metraixbeat/Parameters.conf -l /var/adm/ras/metraixbeat/
 
 ### Main Dashboard screenshot
 
@@ -15,6 +9,13 @@ raw=true
 alt="LPAR Main Dashboard"
 style="margin-right: 10px;"
 />
+
+### Command line to execute (as root)
+	Usage:
+	metraixbeat -c <Parameters.conf file path> -l <Logs directory path>
+	
+	My config:
+	/opt/bin/python3 /opt/freeware/sbin/metraixbeat -c /etc/metraixbeat/Parameters.conf -l /var/adm/ras/metraixbeat/
 
 ### Tried to make the same than "metricbeat" LINUX daemon 
 	Working without modifications to ELK stack 

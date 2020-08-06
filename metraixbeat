@@ -1,4 +1,4 @@
-#!/opt/bin/python3.7
+#!/opt/bin/python3.8
 
 # Python header
 __author__ = "Benjamin Herson-Macarel"
@@ -56,6 +56,7 @@ def LoadDaemonConfig():
     global ELKPassword
     global ELKPort
     global ELKWebProtocol
+    global ELKCertificate
     global ELKServers
     global ELKMetricIndexName
     global ELKLogIndexName
@@ -108,6 +109,10 @@ def LoadDaemonConfig():
                 ELKServers = JSONValues["ELKServers"]
                 ELKUsername = JSONValues["ELKUsername"]
                 ELKPassword = JSONValues["ELKPassword"]
+                ELKCertificate = JSONValues["ELKCertificate"]
+                # Handling if ELKCertificate is empty
+                if(len(ELKCertificate) == 0):
+                    ELKCertificate = "True"
                 ELKPort = JSONValues["ELKPort"]
                 ELKWebProtocol = JSONValues["ELKWebProtocol"]
                 # Duplicating ELKServers to ELKServersFailed making all ELK servers failed by default
@@ -727,6 +732,7 @@ def CheckELKServers():
     global ELKUsername
     global ELKPassword
     global ELKServers
+    global ELKCertificate
     global ELKServersAvailable
     global ELKServersFailed
     global ELKMetricIndexName
@@ -781,16 +787,14 @@ def CheckELKServers():
         # Send Data to ELK server with a Try/Catch
         try:
             # If ELK server is unavailable, we send a get request
-            
-            # ELKServerURL = ELKWebProtocol + '://' + ELKServer + ':' + ELKPort + '/' + CurrentELKIndex + '/_doc'
+
+            # Defining URL and credentials for web request
             ELKCreds = (ELKUsername, ELKPassword)
-            
-            # Defining credential for web request
             ELKServerURL = ELKWebProtocol + '://' + ELKServer + ':' + ELKPort + '/'
             
             # Connect and send encoded JSON message     
             ElasticSearchServer = requests.session()
-            ELKAnswer = ElasticSearchServer.get(ELKServerURL, auth=ELKCreds, timeout=1)
+            ELKAnswer = ElasticSearchServer.get(ELKServerURL, auth=ELKCreds, timeout=5, verify=ELKCertificate)
 
             # If the response was successful, no Exception will be raised
             ELKAnswer.raise_for_status()
@@ -917,6 +921,7 @@ def SendToELK(JSONToSend, LogType = "metric"):
     global ELKServersAvailable
     global ELKServersFailed
     global ELKPort
+    global ELKCertificate
     global ELKWebProtocol
     global ELKMetricIndexName
     global ELKLogIndexName
@@ -938,19 +943,15 @@ def SendToELK(JSONToSend, LogType = "metric"):
                 ELKIndexName = ELKLogIndexName
  
             # Define ELK url depending of index and choosen ELK server
-            # CurrentELKIndex = ELKIndexName + '-aix-' + ELKMonitoringVersion + '-' + datetime.datetime.today().strftime('%Y.%m.%d')
-            # CurrentELKIndex = ELKIndexName + '-aix-' + ELKMonitoringVersion + '-' + datetime.datetime.today().strftime('%Y.%m.%d') + '-000001'
-            CurrentELKIndex = ELKIndexName + '-aix-' + ELKMonitoringVersion
+            CurrentELKIndex = ELKIndexName + '-' + ELKMonitoringVersion
             ELKServerURL = ELKWebProtocol + '://' + ELKServer + ':' + ELKPort + '/' + CurrentELKIndex + '/_doc'
+            
             # Defining credential for web request
             ELKCreds = (ELKUsername, ELKPassword)
-            
-            # print('\nJSONToSend', str(JSONToSend))
-            
+
             # Connect and send encoded data
-            # ElasticSearchServer = requests.post(ELKServerURL, data = JSONToSend.encode("utf8"), verify=True, headers={"Content-Type" : "application/json; charset=utf-8"}, auth=ELKCreds, timeout=1)
-            ELKAnswer = ElasticSearchServer.post(ELKServerURL, data = JSONToSend.encode("utf8"), verify=True, headers={"Content-Type" : "application/json; charset=utf-8"}, auth=ELKCreds, timeout=1)
-            # print('ELKAnswer', str(ELKAnswer), '\n')
+            ELKAnswer = ElasticSearchServer.post(ELKServerURL, data = JSONToSend.encode("utf8"), headers={"Content-Type" : "application/json; charset=utf-8"}, auth=ELKCreds, timeout=5, verify=ELKCertificate)
+
             # If the response was successful, no Exception will be raised
             ELKAnswer.raise_for_status()
 
@@ -1946,13 +1947,14 @@ def SystemCoreAndCpu(ComparisonTimer):
     SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
     
     # Gathering data from OS command for LPAR allocations
-    CmdLine = 'lparstat -i | egrep "Online Virtual CPUs|Entitled Capacity" | head -2'
+    CmdLine = 'lparstat -i | egrep "SMT|Online Virtual CPUs|Entitled Capacity" | head -3'
     LPARStatCmd = subprocess.Popen(CmdLine, shell=True, stdout=subprocess.PIPE).stdout
     LPARStatCmd = LPARStatCmd.read().decode().split('\n')
 
     # LPARSTAT Custom metrics
-    CpuEntAlloc = str(LPARStatCmd[0].split(' ')[-1])
-    VCPUAlloc = str(LPARStatCmd[1].split(' ')[-1])
+    LPARCPUMode = str(LPARStatCmd[0].split(' ')[-1])
+    CpuEntAlloc = str(LPARStatCmd[1].split(' ')[-1])
+    VCPUAlloc = str(LPARStatCmd[2].split(' ')[-1])
     
     # Gathering current number of threads
     OnlineCPUThreads = subprocess.Popen("mpstat -w 1 1 | sed '1,4d' | grep -v U", shell=True, stdout=subprocess.PIPE).stdout
@@ -2004,8 +2006,15 @@ def SystemCoreAndCpu(ComparisonTimer):
     CPUSystemPCTNorm = str(CPUSystemPCTNorm)
 
     # VMSTAT Custom metrics
-    CPUPhysc = str(SystemCoreAndCpuCmd[19])
-    CPUEntcPCT = str(float(SystemCoreAndCpuCmd[20]) / 100)
+    if "Dedicated" in LPARCPUMode:
+        # If LPAR is dedicated CPU mode
+        CPUPhysc = str(AllmpstatLine[15])
+        CPUEntcPCT = "1"
+    else:
+        # If not
+        CPUPhysc = str(SystemCoreAndCpuCmd[19])
+        CPUEntcPCT = str(float(SystemCoreAndCpuCmd[20]) / 100)
+    
     CPURunQueue = str(float(SystemCoreAndCpuCmd[0]))
     CPUBlockQueue = str(float(SystemCoreAndCpuCmd[1]))
     CPURawIOQueue = str(float(SystemCoreAndCpuCmd[2]))

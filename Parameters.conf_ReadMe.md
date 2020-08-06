@@ -26,19 +26,23 @@
 
 ### Set variable for ELK TCP port
 	"ELKPort": "9200"
-
+	
 
 ### Set variable for ELK HTTP protocol used
 	"ELKWebProtocol": "http"
 
 
-### Set variable for the ELK index name
-	ex: 'metricbeat' will create metricbeat-aix-7.5.2. Rollover should make the rest
+### Set variable for SSL certificate (ROOT CA) path to file (.pem was working for me) only if HTTPS is used. Can be concatenation of ROOT CA and INTERMEDIATE",
+	"ELKCertificate": "",
+
+
+### Set variable for the ELK index name. 
+	ex: 'metricbeat' will create metricbeat-7.7.0. Rollover should make the rest
 	"ELKMetricIndexName": "metricbeat"
 
 
-### Set variable for the ELK index name 
-	ex: 'filebeat' will create filebeat-aix-7.5.2 Rollover should make the rest
+### Set variable for the ELK index name. 
+	ex: 'filebeat' will create filebeat-7.7.0 Rollover should make the rest
 	"ELKLogIndexName": "filebeat"
 
 ### Adding DNS Suffix to hostname if not existing
@@ -112,15 +116,14 @@
 
 
 ### Limit the number of monitored network adapters to the given list. Sort and separate them by comma
-	Exemple for all interfaces: 		"EntRestricted": "all"
-	Exemple for all ent interfaces: 		"EntRestricted": "ent16,ent17,ent18"
-	Exemple for all en  interfaces: 		"EntRestricted": "en16,en17,en18"
+	Exemple for all interfaces:                "EntRestricted": "all"
+	Exemple for all ent17,  interfaces:        "EntRestricted": "ent16,en17,en18"
 	"EntRestricted": "all"
 
 
 ### Limit the number of monitored fiber channel adapters to the given list. Sort and separate them by comma
-	Exemple for all interfaces: 		"FcsRestricted": "all"
-	Exemple for all interfaces: 		"FcsRestricted": "fcs16,fcs17,fcs18"
+	Exemple for all interfaces:                                 "FcsRestricted": "all"
+	Exemple for fcs16, fcs17 and fcs18 interfaces only: 		"FcsRestricted": "fcs16,fcs17,fcs18"
 	"FcsRestricted": "all"
 
 

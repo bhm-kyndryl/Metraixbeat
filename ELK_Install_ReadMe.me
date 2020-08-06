@@ -1,6 +1,10 @@
-# How to install ELK 7.5.2 on RHEL/CENTOS
+# How to install ELK 7.7.0 on RHEL/CENTOS
 Informations gathered from ELK website mainly
 
+### Build a Linux VM (RHEL or CentOS)
+	Will be called "elkserver.example.com" in this document
+	Need TCP/9200 port reachable from AIX client
+	
 ###	Add elastic repo 
 	sudo rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
 	
@@ -17,34 +21,37 @@ Informations gathered from ELK website mainly
 	type=rpm-md
 	
 ### Install Kibana / Elasticsearch / Logstash (not mandatory) / Metrixbeat / Filebeat
-	sudo yum install --enablerepo=elasticsearch elasticsearch-7.5.2-1
-	sudo yum install --enablerepo=elasticsearch kibana-7.5.2-1
-	sudo yum install --enablerepo=elasticsearch logstash-7.5.2-1
-	sudo curl -L -O https://artifacts.elastic.co/downloads/beats/metricbeat/metricbeat-7.5.2-x86_64.rpm
-	sudo curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-7.5.2-x86_64.rpm
-	sudo rpm -vi metricbeat-7.5.2-x86_64.rpm
-	sudo rpm -vi filebeat-7.5.2-x86_64.rpm
+	sudo yum install --enablerepo=elasticsearch elasticsearch-7.7.0-1
+	sudo yum install --enablerepo=elasticsearch kibana-7.7.0-1
+	sudo yum install --enablerepo=elasticsearch logstash-7.7.0-1
+	sudo curl -L -O https://artifacts.elastic.co/downloads/beats/metricbeat/metricbeat-7.7.0-x86_64.rpm
+	sudo curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-7.7.0-x86_64.rpm
+	sudo rpm -vi metricbeat-7.7.0-x86_64.rpm
+	sudo rpm -vi filebeat-7.7.0-x86_64.rpm
 
-### Modify elasticsearch.yml to include the following:
+### Modify "/etc/elasticsearch/elasticsearch.yml" to include the following:
 	network.bind_host: 0.0.0.0
 	node.master: true
 	node.data: true
 	transport.host: localhost
 	transport.tcp.port: 9300
 
-### Modify kibana.yml to include the following:
+### Modify "/etc/kibana/kibana.yml" to include the following:
 	server.host: "elkserver.example.com"
-	elasticsearch.hosts: ["http://elkserver.example.com":9200"]
+	elasticsearch.hosts: ["http://elkserver.example.com:9200"]
 
-### Modify metricbeat.yml and filebeat.yml host value to the following:
-	hosts: ["elkserver.example.com":9200"]
+### Modify "/etc/metricbeat/metricbeat.yml" and "/etc/filebeat/filebeat.yml" host value :
+	From 
+	  hosts: ["localhost:9200"]
+	To
+	  hosts: ["elkserver.example.com":9200"]
 	
 ### Restart services to take new config into account
-	systemctl restart elasticsearch.service
-	systemctl restart kibana.service
-	systemctl restart metricbeat.service
-	systemctl restart filebeat.service (Will not send any data until configured to do so...)
-	systemctl stop logstash.service (Stop Logstash if not used)	
+	sudo systemctl restart elasticsearch.service
+	sudo systemctl restart kibana.service
+	sudo systemctl restart metricbeat.service
+	sudo systemctl restart filebeat.service (Will not send any data until configured to do so...)
+	sudo systemctl stop logstash.service (Stop Logstash if not used)	
 
 ### Upload Index templates to Elastic  
 	sudo metricbeat setup -E 'output.elasticsearch.hosts=["elkserver.example.com:9200"]' --index-management

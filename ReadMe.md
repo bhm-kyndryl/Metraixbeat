@@ -8,10 +8,10 @@
 	/opt/bin/python3.7 /opt/freeware/sbin/metraixbeat -c /etc/metraixbeat/Parameters.conf -l /var/adm/ras/metraixbeat/
 
 <img
-src=“./LPAR-Main-Dashboard.png”
+src="./LPAR-Main-Dashboard.png"
 raw=true
-alt=“LPAR Main Dashboard”
-style=“margin-right: 10px;”
+alt="LPAR Main Dashboard"
+style="margin-right: 10px;"
 />
 
 ### Tried to make the same than "metricbeat" LINUX daemon 

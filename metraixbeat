@@ -4,7 +4,7 @@
 __author__ = "Benjamin Herson-Macarel"
 #__copyright__ = ""
 __credits__ = ["Who", "wants", "to", "be", "added", "???"]
-#__license__ = ""
+__license__ = "GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007"
 __version__ = "1.0.1"
 __maintainer__ = "Benjamin Herson-Macarel"
 __email__ = "benjamin.herson-macarel-isc.france@ibm.com"

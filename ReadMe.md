@@ -76,11 +76,11 @@ style="margin-right: 10px;"
 		I think this is mainly because my sample rates are lower than metrixbeat. Those empty bucket should be replace by previous non-empty bucket value but it is not... 
 		I will create a ticket to ELK team for that.	
 	ELK Version
-		This development is based on ELK 7.5.2. It should work with other higher versions (until JSON messages are not modified for metricsets...)
+		This development is based on ELK 7.7.0. It should work with other higher versions (until JSON messages are not modified for metricsets...)
 		Didn't tested it on other version as I need time for that and i dont need it now.
 	Index names
 		You can configure a part of the metricbeat and filebeat index but naming convention hardly coded
-		"ex: 'metricbeat' will create metricbeat-aix-7.5.2" (ELK 7.5.2 is this current Metraixbeat version) and rollover should do the rest
+		"ex: 'metricbeat' will create metricbeat-aix-7.7.0" (ELK 7.7.0 is this current Metraixbeat version) and rollover should do the rest
 	system.socket.summary
 		This metricset requires a lot of CPU to be generated. I keep it schedule but with low sample rate because very usefull
 	system.socket metricset can be generated but take a lot of CPU resources

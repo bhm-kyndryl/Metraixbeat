@@ -1,0 +1,55 @@
+# How to install ELK 7.5.2 on RHEL/CENTOS
+Informations gathered from ELK website mainly
+
+###	Add elastic repo 
+	sudo rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
+	
+### Import the Elasticsearch PGP Key
+	Create a file named "elasticsearch.repo" in the "/etc/yum.repos.d/" directory (for RedHat based distributions) containing:
+	
+	[elasticsearch]
+	name=Elasticsearch repository for 7.x packages
+	baseurl=https://artifacts.elastic.co/packages/7.x/yum
+	gpgcheck=1
+	gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+	enabled=0
+	autorefresh=1
+	type=rpm-md
+	
+### Install Kibana / Elasticsearch / Logstash (not mandatory) / Metrixbeat / Filebeat
+	sudo yum install --enablerepo=elasticsearch elasticsearch-7.5.2-1
+	sudo yum install --enablerepo=elasticsearch kibana-7.5.2-1
+	sudo yum install --enablerepo=elasticsearch logstash-7.5.2-1
+	sudo curl -L -O https://artifacts.elastic.co/downloads/beats/metricbeat/metricbeat-7.5.2-x86_64.rpm
+	sudo curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-7.5.2-x86_64.rpm
+	sudo rpm -vi metricbeat-7.5.2-x86_64.rpm
+	sudo rpm -vi filebeat-7.5.2-x86_64.rpm
+
+### Modify elasticsearch.yml to include the following:
+	network.bind_host: 0.0.0.0
+	node.master: true
+	node.data: true
+	transport.host: localhost
+	transport.tcp.port: 9300
+
+### Modify kibana.yml to include the following:
+	server.host: "elkserver.example.com"
+	elasticsearch.hosts: ["http://elkserver.example.com":9200"]
+
+### Modify metricbeat.yml and filebeat.yml host value to the following:
+	hosts: ["elkserver.example.com":9200"]
+	
+### Restart services to take new config into account
+	systemctl restart elasticsearch.service
+	systemctl restart kibana.service
+	systemctl restart metricbeat.service
+	systemctl restart filebeat.service (Will not send any data until configured to do so...)
+	systemctl stop logstash.service (Stop Logstash if not used)	
+
+### Upload Index templates to Elastic  
+	sudo metricbeat setup -E 'output.elasticsearch.hosts=["elkserver.example.com:9200"]' --index-management
+	sudo filebeat setup -E 'output.elasticsearch.hosts=["elkserver.example.com:9200"]' --index-management
+
+### Upload Dashboard templates to Kibana
+	sudo metricbeat setup -E "setup.kibana.host=elkserver.example.com:5601" -E "output.elasticsearch.hosts=["elkserver.example.com:9200"]" --dashboards
+	sudo filebeat setup -E "setup.kibana.host=elkserver.example.com:5601" -E "output.elasticsearch.hosts=["elkserver.example.com:9200"]" --dashboards

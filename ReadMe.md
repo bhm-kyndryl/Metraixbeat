@@ -55,7 +55,7 @@ style="margin-right: 10px;"
 ### Developped new Dashboards and detailed views for AIX to reflect all metricsets (see Project wiki )
 	I've already created 11 Dashboards (for now) for LPAR which are available for download and then import into ELK
 	(Overview/CPU/MEMORY/FC/Network/Disk/Filesystems/Processes/HPM/Hypervisor/Ping Plotter)
-	You will find screenshots of them in Project wiki
+	You will find screenshots of them in Project folder called "Dashboards"
 	I will create Infrastructure Dashboard in the next two months	
   
   
@@ -80,7 +80,7 @@ style="margin-right: 10px;"
 		Didn't tested it on other version as I need time for that and i dont need it now.
 	Index names
 		You can configure a part of the metricbeat and filebeat index but naming convention hardly coded
-		"ex: 'metricbeat' will create metricbeat-aix-7.7.0" (ELK 7.7.0 is this current Metraixbeat version) and rollover should do the rest
+		"ex: 'metricbeat' will create metricbeat-7.7.0" (ELK 7.7.0 is this current Metraixbeat version) and rollover should do the rest
 	system.socket.summary
 		This metricset requires a lot of CPU to be generated. I keep it schedule but with low sample rate because very usefull
 	system.socket metricset can be generated but take a lot of CPU resources

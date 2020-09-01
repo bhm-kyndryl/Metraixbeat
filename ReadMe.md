@@ -39,7 +39,7 @@ style="margin-right: 10px;"
 	Tested only with 3.7 and 3.8 but should work with other Python3 versions
 	Only 2 dependencies to install from PIP before using it
 		requests 	(pip install requests) for handling easily and properly TCP requests
-		pingparsing 	(pip install pingparsing) to enable the "Ping Plotter" plugin
+		pingparsing 	(pip install 'pingparsing<1.0.0') to enable the "Ping Plotter" plugin
 
 
 ### Few minutes for tuning Parameter.conf file and the daemon is ready to go

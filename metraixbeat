@@ -3053,10 +3053,10 @@ def SystemHPMStat(ComparisonTimer):
         SystemHPMGrpGeneral = subprocess.Popen(SystemHPMGrpGeneralCmd, shell=True, stdout=subprocess.PIPE).stdout
         SystemHPMGrpGeneral = SystemHPMGrpGeneral.read().decode().split('\n')
 
-        CyclePerInst = SystemHPMGrpGeneral[0].split()[-1]
-        InstPerCycle = SystemHPMGrpGeneral[1].split()[-1]
-        L2MissRate = SystemHPMGrpGeneral[2].split()[-2]
-        L3MissRate = SystemHPMGrpGeneral[3].split()[-2]
+        CyclePerInst = SystemHPMGrpGeneral[0].split()[-2]
+        InstPerCycle = SystemHPMGrpGeneral[1].split()[-2]
+        L2MissRate = SystemHPMGrpGeneral[2].split()[-1]
+        L3MissRate = SystemHPMGrpGeneral[3].split()[-1]
 
         FinalString = '{\"cpugeneral\":{\"cycleperinst\":' + CyclePerInst + ',\"instpercycle\":' + InstPerCycle + ',\"l2missrate\":' + L2MissRate + ',\"l3missrate\":' + L3MissRate + '},'
     
@@ -3124,7 +3124,7 @@ def SystemHPMStat(ComparisonTimer):
         RemoteCacheReload = SystemHPMGrp53[2].split()[-1]
         DistantCacheReload = SystemHPMGrp53[0].split()[-1]
         
-        FinalString = str(FinalString) + '\"local\":' + LocalCacheReload + ',\"remote\":' + RemoteCacheReload + ',\"distant\":' + DistantCacheReload + '},'
+        FinalString = str(FinalString) + '\"cpucachereload\":{\"local\":' + LocalCacheReload + ',\"remote\":' + RemoteCacheReload + ',\"distant\":' + DistantCacheReload + '},'
         
     # Gathering data from OS command
     SystemHPMMpStat = subprocess.Popen("mpstat -d 1 1 | grep ALL", shell=True, stdout=subprocess.PIPE).stdout

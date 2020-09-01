@@ -17,11 +17,12 @@ style="margin-right: 10px;"
 	My config:
 	/opt/bin/python3 /opt/freeware/sbin/metraixbeat -c /etc/metraixbeat/Parameters.conf -l /var/adm/ras/metraixbeat/
 
-### Tried to make the same than "metricbeat" LINUX daemon 
+### Tried to make the same than "metricbeat" LINUX daemon
+### But actually, it can send JSON metrics whatever the receiver is... ELK stack or another JSON receiver stack...)
 	Working without modifications to ELK stack 
 	Fit into already existing Metricbeat JSON structures ("metricbeat-*" index pattern)
-	Possible to specify multiple Elastic servers for HA
-	Queueing messages in case of Elastic servers failure
+	Possible to specify multiple servers for HA
+	Queueing messages in case of servers failure
 	Performance of the daemon is overall good without much impact on system but sample rate is much lower than LINUX metricbeat... 
 	Please remember that I'm not DEV and I coded that script mainly for IBM Client project
 

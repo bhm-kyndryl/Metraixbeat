@@ -417,6 +417,7 @@ def GetLPARInformations():
     FcCards = []
     global NumProc
     global NumProcString
+    global IfVIOS
 
     # Checking if LPAR name contains DNS suffix. Adding if not
     # Checking first if var FQDN is not null
@@ -440,6 +441,12 @@ def GetLPARInformations():
     # Get LPAR AIX OS Version
     AIXVersion =  subprocess.Popen("oslevel -s", shell=True, stdout=subprocess.PIPE).stdout
     AIXVersion =  AIXVersion.read().decode().replace("\n","")
+    
+    # Checking if LPAR or VIOS
+    if os.path.exists("/usr/ios/cli/ioscli"):
+        IfVIOS = True
+    else:
+        IfVIOS = False
 
     # Log
     logging.info(" - Checking LPAR AIX version ... Done !")
@@ -509,11 +516,17 @@ def GetLPARInformations():
         # No restriction, taking all network adapters
         NetworkCards = subprocess.Popen("ifconfig -a | grep ': ' | awk -F ':' '{print $1}' | grep -v 'lo0'", shell=True, stdout=subprocess.PIPE).stdout
         NetworkCards = NetworkCards.read().decode().split('\n')
+        if IfVIOS:
+            # Detecting SEA adapters
+            NetworkCardsSEA = subprocess.Popen("lsdev -Cc adapter | grep 'Shared Ethernet Adapter' | awk '{print $1}'", shell=True, stdout=subprocess.PIPE).stdout
+            NetworkCardsSEA = NetworkCardsSEA.read().decode().split('\n')
+            # Adding SEA to the list of monitored adapters
+            NetworkCards = NetworkCards + NetworkCardsSEA
     else:
         # Restriction are specified. Setting Network card list to the given list
         NetworkCards = []
         NetworkCards = EntRestricted.split(',')
-
+    
     # Log
     logging.info(" - Checking LPAR Network interface list ... Done !")
 

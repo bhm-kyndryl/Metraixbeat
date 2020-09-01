@@ -1133,7 +1133,7 @@ def WorkOnMetrics():
         # Checking timer for SystemMemory
         global SystemMemoryThread
         ComparisonTimer = CompareTimer("SystemMemory", SystemMemoryWaitValue)
-        if (ComparisonTimer != devnull) and (SystemMemoryThread.isAlive() != True):
+        if (ComparisonTimer != devnull) and (SystemMemoryThread.is_alive() != True):
             SystemMemoryThread = threading.Thread(target=SystemMemory, args=(ComparisonTimer,))
             SystemMemoryThread.start()
     except Exception as e:
@@ -1231,7 +1231,7 @@ def WorkOnMetrics():
         # Checking timer for SystemSocket
         global SystemSocketThread
         ComparisonTimer = CompareTimer("SystemSocket", SystemSocketWaitValue)
-        if (ComparisonTimer != devnull) and (SystemSocketThread.isAlive() != True):
+        if (ComparisonTimer != devnull) and (SystemSocketThread.is_alive() != True):
             SystemSocketThread = threading.Thread(target=SystemSocket, args=(ComparisonTimer,))
             SystemSocketThread.start()
     except Exception as e:
@@ -1281,7 +1281,7 @@ def WorkOnMetrics():
         # Checking timer for SystemProcess
         global SystemProcessThread
         ComparisonTimer = CompareTimer("SystemProcess", SystemProcessWaitValue)
-        if (ComparisonTimer != devnull) and (SystemProcessThread.isAlive() != True):
+        if (ComparisonTimer != devnull) and (SystemProcessThread.is_alive() != True):
             SystemProcessThread = threading.Thread(target=SystemProcess, args=(ComparisonTimer,))
             SystemProcessThread.start()
     except Exception as e:
@@ -1307,7 +1307,7 @@ def WorkOnMetrics():
         # Checking timer for SystemDiskIO
         global SystemDiskIOThread
         ComparisonTimer = CompareTimer("SystemDiskIO", SystemDiskIOWaitValue)
-        if (ComparisonTimer != devnull) and (SystemDiskIOThread.isAlive() != True):
+        if (ComparisonTimer != devnull) and (SystemDiskIOThread.is_alive() != True):
             SystemDiskIOThread = threading.Thread(target=SystemDiskIO, args=(ComparisonTimer,))
             SystemDiskIOThread.start()
     except Exception as e:
@@ -1357,7 +1357,7 @@ def WorkOnMetrics():
         # Checking timer for PingPlotter
         global PingPlotterThread
         ComparisonTimer = CompareTimer("PingPlotter", PingPlotterWaitValue)
-        if (ComparisonTimer != devnull) and (PingPlotterThread.isAlive() != True):
+        if (ComparisonTimer != devnull) and (PingPlotterThread.is_alive() != True):
             PingPlotterThread = threading.Thread(target=PingPlotter, args=(ComparisonTimer,))
             PingPlotterThread.start()
     except Exception as e:
@@ -1409,7 +1409,7 @@ def WorkOnMetrics():
         global SystemHPMStatThread
         if IfSystemHPMStatEnable == "yes":
             ComparisonTimer = CompareTimer("SystemHPMStat", SystemHPMStatWaitValue)
-            if (ComparisonTimer != devnull) and (SystemHPMStatThread.isAlive() != True):
+            if (ComparisonTimer != devnull) and (SystemHPMStatThread.is_alive() != True):
                 SystemHPMStatThread = threading.Thread(target=SystemHPMStat, args=(ComparisonTimer,))
                 SystemHPMStatThread.start()
     except Exception as e:
@@ -2891,7 +2891,7 @@ def SystemFilesystemAndFstat(ComparisonTimer):
     SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
 
     # Gathering disk list from OS command
-    SystemFilesystemAndFstat = subprocess.Popen('df -k | egrep -v "(Filesystem|:|/proc)"', shell=True, stdout=subprocess.PIPE).stdout
+    SystemFilesystemAndFstat = subprocess.Popen('df -k | egrep -v "(Filesystem|:|/proc|/aha)"', shell=True, stdout=subprocess.PIPE).stdout
     SystemFilesystemAndFstat = SystemFilesystemAndFstat.read().decode().split('\n')
 
     # Initializing counters for Total FS Size message and FS loop

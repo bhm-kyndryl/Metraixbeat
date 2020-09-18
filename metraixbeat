@@ -94,6 +94,7 @@ def LoadDaemonConfig():
     global EntRestricted
     global FcsRestricted
     global HdiskRestricted
+    global NMONSeq
     
     # Checking if Configuration file exists
     if os.path.exists(ConfigFilePath):
@@ -120,6 +121,9 @@ def LoadDaemonConfig():
                 ELKMetricIndexName = JSONValues["ELKMetricIndexName"]
                 ELKLogIndexName = JSONValues["ELKLogIndexName"]
                 FQDN = JSONValues["FQDN"]
+                
+                # Setting NMON sequence counter to 0
+                NMONSeq = 0
 
                 # os._exit(2)
                 # Script functional variables
@@ -854,7 +858,7 @@ def CheckELKServers():
             try:
                 ELKServersFailed.remove(ELKServer)
                 ELKServersAvailable.append(ELKServer)
-                logging.info("INFO     ==> " + ELKServer +  " is Online ! Processing messages on this ELK node")
+                logging.info("INFO     ==> " + ELKServer +  " is Online ! Processing messages on this server")
             except:
                 # Nothing to do
                 pass
@@ -1956,6 +1960,8 @@ def SystemCoreAndCpu(ComparisonTimer):
     
         TODO: Describe the function, all vars and its content
     """
+    global NMONSeq
+    
     # Generating current ELK timestamp for JSON message
     SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
     
@@ -2013,7 +2019,7 @@ def SystemCoreAndCpu(ComparisonTimer):
     CPUUserPCTNorm = float(SystemCoreAndCpuCmd[15]) / 100
     CPUSystemPCTNorm = float(SystemCoreAndCpuCmd[16]) / 100
     CPUIOWaitPCTNorm = str(float(SystemCoreAndCpuCmd[18]) / 100)
-    CPUTotalNorm = 1 - CPUUserPCTNorm - CPUSystemPCTNorm
+    CPUTotalNorm = CPUUserPCTNorm + CPUSystemPCTNorm
     CPUTotalNorm = str(CPUTotalNorm)
     CPUUserPCTNorm = str(CPUUserPCTNorm)
     CPUSystemPCTNorm = str(CPUSystemPCTNorm)
@@ -2032,6 +2038,38 @@ def SystemCoreAndCpu(ComparisonTimer):
     CPUBlockQueue = str(float(SystemCoreAndCpuCmd[1]))
     CPURawIOQueue = str(float(SystemCoreAndCpuCmd[2]))
     CPUWaitQueue = str(float(SystemCoreAndCpuCmd[3]))
+    
+    # If LPAR is a VIOS nad NMON running, gathering CPU pool information from current NMON file
+    if IfVIOS:
+        # Making try/catch to avoid any unpredicted situation (and no NMON running of course)... To improve...
+        try:
+            # Checking if any NMON is running
+            NMONRunningPath = subprocess.Popen("ps -ef | grep nmon | grep -v grep | tail -1", shell=True, stdout=subprocess.PIPE).stdout
+            NMONRunningPath = NMONRunningPath.read().decode().split()
+            
+            # Getting current NMON file
+            NMONRunningFileCmd = ('ls -lart ' + NMONRunningPath[13].split('=')[1] + '* | tail -n 1')
+            NMONRunningFile = subprocess.Popen(NMONRunningFileCmd, shell=True, stdout=subprocess.PIPE).stdout
+            NMONRunningFile = NMONRunningFile.read().decode().split()
+            
+            # Gathering metrics from NMON file
+            NMONGatheringCmd = ('cat ' + NMONRunningFile[-1] + ' | grep LPAR | tail -n 1')
+            NMONGathering = subprocess.Popen(NMONGatheringCmd, shell=True, stdout=subprocess.PIPE).stdout
+            NMONGathering = NMONGathering.read().decode().split(',')
+            CpuPoolIdle = NMONGathering[8]
+            CurrNMONSeq = NMONGathering[1]
+            
+            
+            if int(CurrNMONSeq.replace('T', '')) != NMONSeq:
+                # New data detected, adding metrics to message
+                NMONSeq = int(CurrNMONSeq.replace('T', ''))
+                NewNMONData = True
+            else:
+                # No new data
+                NewNMONData = False
+        except:
+            #NMON not running
+            NewNMONData = False
 
     # IMPROVEMENT - Don't know how to translate,  = "0" (type str for string manipulation)
     CPUSoftIRQPCT = "0"
@@ -2099,7 +2137,14 @@ def SystemCoreAndCpu(ComparisonTimer):
     '\"cpurunqueue\":' + CPURunQueue + ','
     '\"cpublockqueue\":' + CPUBlockQueue + ','
     '\"cpurawioqueue\":' + CPURawIOQueue + ','
-    '\"cpuwaitqueue\":' + CPUWaitQueue + '},'
+    '\"cpuwaitqueue\":' + CPUWaitQueue + '')
+    
+    # Adding CPU Pool metrics for VIOS
+    if IfVIOS and NewNMONData:
+        JSONToSendValues = JSONToSendValues + ',\"cpupoolidle\":' + str(CpuPoolIdle) + ''
+        
+    # Then, adding the rest of the metrics
+    JSONToSendValues = JSONToSendValues + ('},'
     '\"steal\":{\"pct\":' + CPUStealPCTNorm + '},'
     '\"idle\":{\"pct\":' + CPUIdlePCTNorm + '},'
     '\"nice\":{\"pct\":' + CPUNicePCTNorm + '},'

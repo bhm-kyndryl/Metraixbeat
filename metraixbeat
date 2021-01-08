@@ -5,7 +5,7 @@ __author__ = "Benjamin Herson-Macarel"
 #__copyright__ = ""
 __credits__ = ["Who", "wants", "to", "be", "added", "???"]
 __license__ = "GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007"
-__version__ = "1.0.1"
+__version__ = "1.21.1"
 __maintainer__ = "Benjamin Herson-Macarel"
 __email__ = "benjamin.herson-macarel-isc.france@ibm.com"
 __status__ = "Stable"
@@ -51,17 +51,24 @@ def LoadDaemonConfig():
     global ConfigFilePath
     global ELKMonitoringVersion
     global ECSVersion
-    global ELKServers
+    global ElasticServers
+    global FilebeatServers
+    global LogstashServers
+    global ElasticPort
+    global FilebeatPort
+    global LogstashPort
     global ELKUsername
     global ELKPassword
-    global ELKPort
     global ELKWebProtocol
     global ELKCertificate
-    global ELKServers
-    global ELKMetricIndexName
-    global ELKLogIndexName
-    global ELKServersAvailable
-    global ELKServersFailed
+    global ElasticIndexName
+    global FilebeatIndexName
+    global ElasticServersAvailable
+    global FilebeatServersAvailable
+    global LogstashServersAvailable
+    global ElasticServersFailed
+    global FilebeatServersFailed
+    global LogstashServersFailed
     global FQDN
     global ReprocessingValueAtOnce
     global TailRefreshValue
@@ -83,18 +90,19 @@ def LoadDaemonConfig():
     global IfSystemHypervisorEnable
     global SystemHPMStatWaitValue
     global SystemHypervisorWaitValue
-    global TailReloadValue
+    global ErrptLogWaitValue
     global PingPlotterTargets
     global PingPlotterWaitValue
     global PingSamples
     global PingTimeout
-    global LPARAppName
-    global HostingSite
-    global QueueingTimerLimit
     global EntRestricted
     global FcsRestricted
     global HdiskRestricted
     global NMONSeq
+    global Tags
+    global Tagz
+    global Labels
+    global BulkMaxSize
     
     # Checking if Configuration file exists
     if os.path.exists(ConfigFilePath):
@@ -107,28 +115,45 @@ def LoadDaemonConfig():
                 # Set variables for ELK server.
                 ELKMonitoringVersion = JSONValues["ELKMonitoringVersion"]
                 ECSVersion = JSONValues["ECSVersion"]
-                ELKServers = JSONValues["ELKServers"]
+                ElasticServers = JSONValues["ElasticServers"]
+                FilebeatServers = JSONValues["FilebeatServers"]
+                LogstashServers = JSONValues["LogstashServers"]
+                
+                # Checking if Filebeat output is empty
+                if len(FilebeatServers) == 0:
+                    # Then defaulting to Metricbeat output
+                    FilebeatServers = ElasticServers
+                # Checking if Logstash output is empty
+                if len(LogstashServers) == 0:
+                    # Then defaulting to Metricbeat output
+                    LogstashServers = ElasticServers
+                
                 ELKUsername = JSONValues["ELKUsername"]
                 ELKPassword = JSONValues["ELKPassword"]
                 ELKCertificate = JSONValues["ELKCertificate"]
                 # Handling if ELKCertificate is empty
                 if(len(ELKCertificate) == 0):
                     ELKCertificate = "True"
-                ELKPort = JSONValues["ELKPort"]
+                ElasticPort = JSONValues["ElasticPort"]
+                FilebeatPort = JSONValues["FilebeatPort"]
+                LogstashPort = JSONValues["LogstashPort"]
                 ELKWebProtocol = JSONValues["ELKWebProtocol"]
-                # Duplicating ELKServers to ELKServersFailed making all ELK servers failed by default
-                ELKServersFailed = ELKServers[:]
-                ELKMetricIndexName = JSONValues["ELKMetricIndexName"]
-                ELKLogIndexName = JSONValues["ELKLogIndexName"]
-                FQDN = JSONValues["FQDN"]
+                # Duplicating *Servers to *ServersAvailable making all ELK servers failed by default
+                ElasticServersAvailable = ElasticServers[:]
+                ElasticServersFailed = []
+                FilebeatServersAvailable = FilebeatServers[:]
+                FilebeatServersFailed = []
+                LogstashServersAvailable = LogstashServers[:]
+                LogstashServersFailed = []
+                ElasticIndexName = JSONValues["ElasticIndexName"]
+                FilebeatIndexName = JSONValues["FilebeatIndexName"]
+                
+                
                 
                 # Setting NMON sequence counter to 0
                 NMONSeq = 0
 
-                # os._exit(2)
                 # Script functional variables
-                # Maximum historical JSON messages (historized when ELK server was down) to proceed at each script Cycle
-                ReprocessingValueAtOnce = int(JSONValues["ReprocessingValueAtOnce"])
                 # Time to wait before refreshing tail's processes status (in seconds)
                 TailRefreshValue = int(JSONValues["TailRefreshValue"])
                 # Time to wait between two execution of the Main Loop (in seconds)
@@ -137,6 +162,10 @@ def LoadDaemonConfig():
                 DiskSampleRate = int(JSONValues["DiskSampleRate"])
                 # If different than 0, set the limit of processes that must be taken into account while checking TOP processes CPU activity
                 TopProcesses = int(JSONValues["TopProcesses"])
+                # Adding FQDN to the hostname if not existing, andd necessary...
+                FQDN = JSONValues["FQDN"]
+                # How much messages are sent within one connection to server
+                BulkMaxSize = int(JSONValues["BulkMaxSize"])
 
                 # Topic timers variables (in seconds)
                 # Time to wait before sending new metric values to ELK server
@@ -151,11 +180,6 @@ def LoadDaemonConfig():
                 SystemMemoryWaitValue = int(JSONValues["SystemMemoryWaitValue"])
                 SystemNetworkWaitValue = int(JSONValues["SystemNetworkWaitValue"])
                 SystemCoreAndCpuWaitValue = int(JSONValues["SystemCoreAndCpuWaitValue"])
-
-                # IMPROVEMENT / SAFETY - Time to wait before reloading a Tail process not modified since 1 day (in minutes)
-                TailReloadValue = int(JSONValues["TailReloadValue"])
-                # Calculating TailReloadValue depending on CycleSleepTime
-                TailReloadValue = ((TailReloadValue * 60) / CycleSleepTime)
                 
                 # Loading PingPlotter targets and configuration values
                 PingPlotterTargets = JSONValues["PingPlotterTargets"]
@@ -168,13 +192,20 @@ def LoadDaemonConfig():
                 IfSystemHypervisorEnable = JSONValues["IfSystemHypervisorEnable"]
                 SystemHPMStatWaitValue = int(JSONValues["SystemHPMStatWaitValue"])
                 SystemHypervisorWaitValue = int(JSONValues["SystemHypervisorWaitValue"])
-                                
-                # Loading Application Name and DC site values
-                LPARAppName = JSONValues["LPARAppName"]
-                HostingSite = JSONValues["HostingSite"]
+                ErrptLogWaitValue = int(JSONValues["ErrptLogWaitValue"])
+
                 
-                # Loading QueueingTimerLimit to recycle JSON queues content after this amount of minutes (CPU performances)
-                QueueingTimerLimit = int(JSONValues["QueueingTimerLimit"])
+                # Loading Tags
+                Tags = JSONValues["tags"]
+                
+                # Generating tagz var for rollup purpose
+                Tagz = ""
+                for Tag in Tags:  
+                    Tagz += Tag + ','
+                Tagz = Tagz[:-1]
+                
+                # Loading Labels
+                Labels = JSONValues["labels"]
                 
                 # Loading some parameter that can restrict the number of devices checked for some cases
                 # Network Adapters
@@ -187,12 +218,15 @@ def LoadDaemonConfig():
             # problem encountered while loading JSON daemon configuration file, exiting
             logging.info("            ==> Error while loading " + ConfigFilePath + " daemon config file !")
             logging.info("                Please check the Configuration file JSON parameters, format and validity")
+            logging.info(str(traceback.print_exc()))
             traceback.print_exc()
             os._exit(2)
     else:
         # Daemon configuration file does not exist, exiting
         logging.info("            ==> Error while loading " + ConfigFilePath + " daemon config file !")
         logging.info("                Config file does not exist")
+        logging.info(str(traceback.print_exc()))
+        traceback.print_exc()
         os._exit(2)
 
     # Log
@@ -209,7 +243,6 @@ def LoadDaemonConfig():
     # print('<!> DEBUG ', Metricbeat_LogStash_PORT, 'Metricbeat_LogStash_PORT')
     # print('<!> DEBUG ', Filebeat_LogStash_PORT, 'Filebeat_LogStash_PORT')
     # print('<!> DEBUG ', FQDN, 'FQDN')
-    # print('<!> DEBUG ', ReprocessingValueAtOnce, 'ReprocessingValueAtOnce')
     # print('<!> DEBUG ', TailRefreshValue, 'TailRefreshValue')
     # print('<!> DEBUG ', CycleSleepTime, 'CycleSleepTime')
     # print('<!> DEBUG ', DiskSampleRate, 'DiskSampleRate')
@@ -223,7 +256,6 @@ def LoadDaemonConfig():
     # print('<!> DEBUG ', SystemMemoryWaitValue, 'SystemMemoryWaitValue')
     # print('<!> DEBUG ', SystemNetworkWaitValue, 'SystemNetworkWaitValue')
     # print('<!> DEBUG ', SystemCoreAndCpuWaitValue, 'SystemCoreAndCpuWaitValue')
-    # print('<!> DEBUG ', TailReloadValue, 'TailReloadValue')
     # print('\nFINDEBUG\n')
     pass
 
@@ -242,6 +274,7 @@ def LoadPluginConfig():
     global FilebeatConfigsArray
     global CustomMetricsConfigsArray
     global PingPlotterArray
+    global TargetFileCurrentPosArray
 
     # Switching vars to global
     global ConfigFilePath
@@ -266,36 +299,54 @@ def LoadPluginConfig():
                     JSONValues = json.load(ConfigFile)
 
                     # Log
-                    logging.info("            * Target file        = " + JSONValues["TargetFile"])
-                    logging.info("            * Patterns       = " + str(JSONValues["Patterns"]))
-                    logging.info("            * Multiline sparator = " + JSONValues["MultilineSeparator"])
+                    logging.info("            * Target file                 = " + JSONValues["TargetFile"])
+                    logging.info("            * Patterns                    = " + str(JSONValues["Patterns"]))
+                    logging.info("            * Multiline sparator REGEX    = " + JSONValues["MultilineSeparator"])
+                    logging.info("            * Output                      = " + JSONValues["Output"])
                     
                     # Generating EGREP string from list of patterns
-                    EGREPString = ""
+                    PatternMatch = ""
                     for Pattern in JSONValues["Patterns"]:
-                        EGREPString = EGREPString + Pattern + "|"
-                    EGREPString = EGREPString[:-1]
+                        PatternMatch = PatternMatch + Pattern + "|"
+                    PatternMatch = PatternMatch[:-1]
                     
                     # Converting date format, if any, in target file  
                     CurrentTargetFile = ConvertFileName(JSONValues["TargetFile"])
-
-                    # Storing the last line of the Target file to start tail on
-                    with open(CurrentTargetFile, "r") as LastLine:
-                        TargetFileLastLine = len(LastLine.readlines()) + 1
-
-                    # Storing the inode and size of the Target file to start tail on
-                    TargetFileInode = os.stat(CurrentTargetFile).st_ino
-                    TargetFileSize = os.stat(CurrentTargetFile).st_size
                     
+                    # Checking if file exists
+                    try:
+                        # Storing the last line of the Target file to start tail on
+                        with open(CurrentTargetFile, "r") as LastLine:
+                            TargetFileLastLine = len(LastLine.readlines()) + 1
+                            
+                        # Storing the inode and size of the Target file to start tail on
+                        TargetFileInode = os.stat(CurrentTargetFile).st_ino
+                        TargetFileSize = os.stat(CurrentTargetFile).st_size
+                        
+                    except:
+                        # File does not exists, rising a warning but loading config with 0 default values
+                        LastLine = 0
+                        TargetFileInode = 0
+                        TargetFileSize = 0
+                        TargetFileLastLine = 0
+                        
+                        # Log
+                        logging.info("            ==> Warning while loading " + f_name + " config file !")
+                        logging.info("                File does not exists yet, daemon will retry later...")
+                        
+                        # Initializing state value to start tail from line 1 when file will be available
+                        TargetFileCurrentPosArray[f_name] = 0
+
                     # Storing results into FilebeatConfigsArray dictionnary
-                    ConfigString = CurrentTargetFile + ',' + JSONValues["TargetFile"] + ',' + EGREPString + ',' + str(TargetFileLastLine) + ',' + str(TargetFileInode) + ',' + str(TargetFileSize) + ',' + JSONValues["MultilineSeparator"]
+                    ConfigString = CurrentTargetFile + ',' + JSONValues["TargetFile"] + ',' + PatternMatch + ',' + str(TargetFileLastLine) + ',' + str(TargetFileInode) + ',' + str(TargetFileSize) + ',' + str(JSONValues["MultilineSeparator"] + ',' + str(JSONValues["Output"]))
                     FilebeatConfigsArray[f_name] = ConfigString
             except:
                 # If error, bypassing this plugin
                 # Log
                 logging.info("            ==> Error while loading " + f_name + " config file !")
-                logging.info("                Please check that target file is existing, JSON format and validity")
-                # traceback.print_exc()
+                logging.info("                Please check JSON format and validity")
+                logging.info(str(traceback.print_exc()))
+                traceback.print_exc()
             # pass
 
     # All filebeat plugins loaded
@@ -321,18 +372,20 @@ def LoadPluginConfig():
                     JSONValues = json.load(ConfigFile)
 
                     # Log
-                    logging.info("            * OS Script            = " + JSONValues["OSScript"])
-                    logging.info("            * Refresh value in sec = " + str(JSONValues["Refresh"]))
+                    logging.info("            * OS Script               = " + JSONValues["OSScript"])
+                    logging.info("            * Refresh value in sec    = " + str(JSONValues["Refresh"]))
+                    logging.info("            * Output                  = " + JSONValues["Output"])
 
 
                     # Storing results into FilebeatConfigsArray dictionnary
-                    ConfigString = JSONValues["OSScript"] + ',' + str(JSONValues["Refresh"])
+                    ConfigString = JSONValues["OSScript"] + ',' + str(JSONValues["Refresh"]) + ',' + JSONValues["Output"]
                     CustomMetricsConfigsArray[f_name] = ConfigString
             except:
                 # If error, bypassing this plugin
                 # Log
                 logging.info("            ==> Error while loading " + f_name + " config file !")
                 logging.info("                Please check that target file is existing, JSON format and validity")
+                logging.info(str(traceback.print_exc()))
                 traceback.print_exc()
                 os._exit(2)
 
@@ -422,6 +475,9 @@ def GetLPARInformations():
     global NumProc
     global NumProcString
     global IfVIOS
+    global Tags
+    global Tagz
+    global Labels
 
     # Checking if LPAR name contains DNS suffix. Adding if not
     # Checking first if var FQDN is not null
@@ -438,6 +494,15 @@ def GetLPARInformations():
     LPARPrtConf = LPARPrtConf.read().decode().split('\n')
     LPARArch = LPARPrtConf[1]
     LPARHost = LPARPrtConf[0]
+    
+    
+    # Disabled for now as hosting frame has been moved to labels
+    # Tags.append(LPARHost)
+    # Tagz = Tagz + ',' + LPARHost
+    
+    # Adding hosting frame to Labels list
+    LabelHostStr = 'powersn:' + str(LPARHost)
+    Labels.append(LabelHostStr)
     
     # Log
     logging.info(" - Checking LPAR Architecture... Done !")
@@ -628,26 +693,39 @@ def ConvertFileName(FileName):
     # Depending of the config file, TargetFile name may contain reference to date. Let's convert it !
     # We will ad new conversion if required by users...
 
-    # Converting %yyyy to 4 digits years format
-    FileNameC = str(FileName.replace('%YYYY', datetime.datetime.now().strftime("%Y")))
-    
-    # Converting %yy to 2 digits years format
+    FileNameC = str(FileName.replace('%a', datetime.datetime.now().strftime("%a")))
+    FileNameC = FileNameC.replace('%A', datetime.datetime.now().strftime("%A"))
+    FileNameC = FileNameC.replace('%w', datetime.datetime.now().strftime("%w"))
+    FileNameC = FileNameC.replace('%d', datetime.datetime.now().strftime("%d"))
+    FileNameC = FileNameC.replace('%-d', datetime.datetime.now().strftime("%-d"))
+    FileNameC = FileNameC.replace('%b', datetime.datetime.now().strftime("%b"))
+    FileNameC = FileNameC.replace('%B', datetime.datetime.now().strftime("%B"))
+    FileNameC = FileNameC.replace('%m', datetime.datetime.now().strftime("%m"))
+    FileNameC = FileNameC.replace('%-m', datetime.datetime.now().strftime("%-m"))
+    FileNameC = FileNameC.replace('%y', datetime.datetime.now().strftime("%y"))
+    FileNameC = FileNameC.replace('%-y', datetime.datetime.now().strftime("%-y"))
+    FileNameC = FileNameC.replace('%Y', datetime.datetime.now().strftime("%Y"))
     FileNameC = FileNameC.replace('%YY', datetime.datetime.now().strftime("%y"))
+    FileNameC = FileNameC.replace('%H', datetime.datetime.now().strftime("%H"))
+    FileNameC = FileNameC.replace('%-H', datetime.datetime.now().strftime("%-H"))
+    FileNameC = FileNameC.replace('%I', datetime.datetime.now().strftime("%I"))
+    FileNameC = FileNameC.replace('%-I', datetime.datetime.now().strftime("%-I"))
+    FileNameC = FileNameC.replace('%p', datetime.datetime.now().strftime("%p"))
+    FileNameC = FileNameC.replace('%M', datetime.datetime.now().strftime("%M"))
+    FileNameC = FileNameC.replace('%-M', datetime.datetime.now().strftime("%-M"))
+    FileNameC = FileNameC.replace('%S', datetime.datetime.now().strftime("%S"))
+    FileNameC = FileNameC.replace('%-S', datetime.datetime.now().strftime("%-S"))
+    FileNameC = FileNameC.replace('%f', datetime.datetime.now().strftime("%f"))
+    FileNameC = FileNameC.replace('%z', datetime.datetime.now().strftime("%z"))
+    FileNameC = FileNameC.replace('%j', datetime.datetime.now().strftime("%j"))
+    FileNameC = FileNameC.replace('%-j', datetime.datetime.now().strftime("%-j"))
+    FileNameC = FileNameC.replace('%U', datetime.datetime.now().strftime("%U"))
+    FileNameC = FileNameC.replace('%W', datetime.datetime.now().strftime("%W"))
+    FileNameC = FileNameC.replace('%c', datetime.datetime.now().strftime("%c"))
+    FileNameC = FileNameC.replace('%x', datetime.datetime.now().strftime("%x"))
+    FileNameC = FileNameC.replace('%X', datetime.datetime.now().strftime("%X"))
+    FileNameC = FileNameC.replace('%%', datetime.datetime.now().strftime("%%"))
     
-    # Converting %mm to 2 digits month format
-    FileNameC = FileNameC.replace('%MM', datetime.datetime.now().strftime("%m"))
-    
-    # Converting %dd to 2 digits day format
-    FileNameC = FileNameC.replace('%DD', datetime.datetime.now().strftime("%d"))
-    
-    # Converting %dd to 2 digits hour format
-    FileNameC = FileNameC.replace('%hh', datetime.datetime.now().strftime("%H"))
-    
-    # Converting %dd to 2 digits minute format
-    FileNameC = FileNameC.replace('%mm', datetime.datetime.now().strftime("%M"))
-    
-    # Converting %dd to 2 digits second format
-    FileNameC = FileNameC.replace('%ss', datetime.datetime.now().strftime("%S"))
     
     # Returning converted string
     # print('\nconverted: ', FileNameC,'\n')
@@ -662,8 +740,19 @@ def GenerateStaticJSON():
     """
     
     global StaticJSON
+    global StaticJSONFilebeat
     
-    # Define Agent JSON
+    # Define tags for metricbeat
+    JSONTags=(''
+    '\"tags\": ' + str(Tags).replace('\'','"') + ','
+    '\"rollup\":{\"tagz\": \"' + str(Tagz) + '\",\"hostname\":\"' + LPARName + '\"},')
+    
+    # Define rollup tags for filebeat (adding extra tagz and hostname field with rolled-up naming convention for easy use in dashboard)
+    JSONTagsFilebeat=(''
+    '\"tags\": ' + str(Tags).replace('\'','"') + ','
+    '\"rollup\":{\"tagz\":{\"terms\":{\"value\": \"' + str(Tagz) + '\"}},\"hostname\":{\"terms\":{\"value\": \"' + LPARName + '\"}}},')
+    
+    # Define Agent JSON for metricbeat
     JSONAgent = (''
     '\"agent\":{'
     '\"version\":\"' + ELKMonitoringVersion + '\",'
@@ -672,13 +761,26 @@ def GenerateStaticJSON():
     '\"hostname\":\"' + LPARName + '\",'
     '\"id\":\"' + AgentID + '\"'
     '},')
-
-    # Define Host JSON
+    
+    # Define Agent JSON for filebeat
+    JSONAgentFilebeat = (''
+    '\"agent\":{'
+    '\"version\":\"' + ELKMonitoringVersion + '\",'
+    '\"type\":\"filebeat\",'
+    '\"ephemeral_id\":\"' + EphemeralID + '\",'
+    '\"hostname\":\"' + LPARName + '\",'
+    '\"id\":\"' + AgentID + '\"'
+    '},')
+    
+    # Checking if LPAR is a VIOS
+    if IfVIOS:
+        OSFamily = 'VIOS'
+    else:
+        OSFamily = 'AIX'
+        
+    # Define Host JSON for metricbeat
     JSONHost = (''
     '\"host\":{'
-    '\"frame\":\"' + LPARHost + '\",'
-    '\"site\":\"' + HostingSite + '\",'
-    '\"app\":\"' + LPARAppName + '\",'
     '\"name\":\"' + LPARName + '\",'
     '\"hostname\":\"' + LPARName + '\",'
     '\"architecture\":\"' + LPARArch + '\",'
@@ -687,7 +789,7 @@ def GenerateStaticJSON():
     '\"os\":{'
     '\"platform\":\"AIX\",'
     '\"version\":\"' + AIXVersion + '\",'
-    '\"family\":\"AIX\",'
+    '\"family\":\"' + OSFamily + '\",'
     '\"name\":\"AIX\",'
     '\"kernel\":\"' + AIXVersion + '\",'
     '\"codename\":\"AIX\"'
@@ -697,9 +799,20 @@ def GenerateStaticJSON():
     JSONEcs = (''
     '\"ecs\":{'
     '\"version\":\"' + ECSVersion + '\"'
-    '}')
+    '},')
+    
+    # Generating labels JSON with key/value pairs
+    LabelString = '\"labels\":{'
+    for Label in Labels:
+        LabelString += '\"' + Label.replace(':','\":\"') + '\",'
+        
+    LabelString = LabelString[:-1]
+    LabelString += '}'
 	
-    StaticJSON = JSONAgent + JSONHost + JSONEcs
+    StaticJSON = JSONTags + JSONAgent + JSONHost + JSONEcs + LabelString
+    StaticJSONFilebeat = JSONTagsFilebeat + JSONAgentFilebeat + JSONHost + JSONEcs + LabelString
+    
+    # print(StaticJSON)
 
     pass
 
@@ -727,12 +840,12 @@ def GenerateDynamicJson(EventDataset, ServiceType, MetricSet, ComparisonTimer):
     '\"name\":\"' + MetricSet + '\",'
     '\"period\":1'
     '}')
-
+    
     DynamicJSON = JSONServiceType + JSONEventDataset + JSONMetricSet
 
     return DynamicJSON
 
-def CheckELKServers():
+def CheckServers():
     """ This function check the state of the Metricbeat Elasticsearch server.
 
         It also handles the retransmit queues for Metricbeat and Filebeat items.
@@ -746,72 +859,52 @@ def CheckELKServers():
     # Setting global vars
     global SendQueueArray
     global FilebeatSendQueueArray
+    global LogstashSendQueueArray
     global ELKUsername
     global ELKPassword
-    global ELKServers
+    global ElasticServers
+    global FilebeatServers
+    global LogstashServers
+    global ElasticPort
+    global FilebeatPort
+    global LogstashPort
     global ELKCertificate
-    global ELKServersAvailable
-    global ELKServersFailed
-    global ELKMetricIndexName
-    global ELKLogIndexName
-    # global JSONCheckMessage
-    global ELKServer
+    global ElasticServersAvailable
+    global ElasticServersFailed
+    global FilebeatServersAvailable
+    global FilebeatServersFailed
+    global LogstashServersAvailable
+    global LogstashServersFailed
+    global ElasticIndexName
+    global FilebeatIndexName
     global ELKUsername
     global ELKPassword
-    global ElasticSearchServer
-    global AllServersFailedDate
-    global QueueingTimerLimit
-
-    # Checking for available ELK servers
-    if len(ELKServersAvailable) == 0:
-        # Checking AllServersFailedDate definition state
-        try:
-            # Checking if var is defined
-            AllServersFailedDate
-            
-            # If yes, checking if Queueing max timer is reached
-            CurrentDate = datetime.datetime.now()
-            
-            # Checking if the queue is older than 24H
-            TimeDelta = CurrentDate - AllServersFailedDate 
-            
-            # Converting Time Delta in minutes
-            TimeDeltaMinutes = TimeDelta.seconds / 60
-            
-            # Log
-            # logging.info('INFO     ==> Timer limit: ' + str(QueueingTimerLimit)  + ', TimeDeltaMinutes: ' + str(TimeDeltaMinutes))
-            
-            # We check if timer is reached
-            if TimeDeltaMinutes > QueueingTimerLimit:
-                # Timer is reached, we remove all items from all queues
-                SendQueueArray.clear()
-                FilebeatSendQueueArray.clear()
-                
-                # Reseting AllServersFailedDate var with current datetime
-                AllServersFailedDate = datetime.datetime.now()
-                
-                # Log
-                logging.info('INFO     ==> Maximum queueing timer is reached. All historical JSON messages removed from queues !')
-            
-        except:
-            LogString = str(traceback.format_exc())
-            # If not, setting it with current date
-            AllServersFailedDate = datetime.datetime.now()
+    global ElasticServerCnx
+    global FilebeatServerCnx
+    global LogstashServerCnx
+    global AllElasticServersFailedDate
+    global AllFilebeatServersFailedDate
+    global AllLogstashServersFailedDate
+    global MetricbeatQueueFlushed
+    global FilebeatQueueFlushed
+    global LogstashQueueFlushed
+    global BulkMaxSize
+    
+    # Checking for unavailable Elastic servers
+    if len(ElasticServersFailed) != 0:
+                        
+        # Choosing randomly one Elastic server in the failed pool
+        ElasticServer = random.choice(ElasticServersFailed)
         
-        # Choosing randomly one ELK server in the pool
-        ELKServer = random.choice(ELKServersFailed)
-        
-        # Send Data to ELK server with a Try/Catch
+        # If ElasticServer server is unavailable, we send a get request
         try:
-            # If ELK server is unavailable, we send a get request
-
             # Defining URL and credentials for web request
             ELKCreds = (ELKUsername, ELKPassword)
-            ELKServerURL = ELKWebProtocol + '://' + ELKServer + ':' + ELKPort + '/'
+            ElasticServerURL = ELKWebProtocol + '://' + ElasticServer + ':' + ElasticPort + '/'
             
             # Connect and send encoded JSON message     
-            ElasticSearchServer = requests.session()
-            ELKAnswer = ElasticSearchServer.get(ELKServerURL, auth=ELKCreds, timeout=5, verify=ELKCertificate)
+            ElasticServerCnx = requests.session()
+            ELKAnswer = ElasticServerCnx.get(ElasticServerURL, auth=ELKCreds, timeout=5, verify=ELKCertificate)
 
             # If the response was successful, no Exception will be raised
             ELKAnswer.raise_for_status()
@@ -819,109 +912,219 @@ def CheckELKServers():
         except HTTPError as http_err:
             # ELK server is still unavailable
             # Log
-            logging.info("WARNING  ==> " + ELKServer +  " is unvailable")
+            logging.info("WARNING  ==> " + ElasticServer +  " is unavailable for Metricbeat messages")
             
             # Creating the error stack file and filling error stack informations
-            with open(CrashDumpCheckLog, 'a') as f:
-                f.write('\n\n')
-                f.write(str(datetime.datetime.now()))
-                f.write(':\n')
-                f.write(str(http_err))
-                f.write(traceback.format_exc())
-                f.write('\n')
+            # with open(CrashDumpCheckLog, 'a') as f:
+                # f.write('\n\n')
+                # f.write(str(datetime.datetime.now()))
+                # f.write(':\n')
+                # f.write(str(http_err))
+                # f.write(traceback.format_exc())
+                # f.write('\n')
 
             # Print and log error stack for debug purpose
-            logging.info('WARNING  ==> Please check ' + CrashDumpCheckLog + ' for more informations on HTTP errors')
+            # logging.info('WARNING  ==> Please check ' + CrashDumpCheckLog + ' for more informations on HTTP errors')
             # traceback.print_exc()
 
         except Exception as err:
             # ELK server is still unavailable
             # Log
-            logging.info("WARNING  ==> " + ELKServer +  " is unvailable")
+            logging.info("WARNING  ==> " + ElasticServer +  " is unavailable for Metricbeat messages")
             
             # Creating the error stack file and filling error stack informations
-            with open(CrashDumpCheckLog, 'a') as f:
-                f.write('\n\n')
-                f.write(str(datetime.datetime.now()))
-                f.write(':\n')
-                f.write(str(err))
-                f.write(traceback.format_exc())
-                f.write('\n')
+            # with open(CrashDumpCheckLog, 'a') as f:
+                # f.write('\n\n')
+                # f.write(str(datetime.datetime.now()))
+                # f.write(':\n')
+                # f.write(str(err))
+                # f.write(traceback.format_exc())
+                # f.write('\n')
 
             # Print and log error stack for debug purpose
-            logging.info('WARNING  ==> Please check ' + CrashDumpCheckLog + ' for more informations on HTTP errors')
+            # logging.info('WARNING  ==> Please check ' + CrashDumpCheckLog + ' for more informations on HTTP errors')
             # traceback.print_exc()
         
         else:
             # ELK server is available, let's add it into the Available pool 
             # Into a try/catch because some background processes can modify these value
             try:
-                ELKServersFailed.remove(ELKServer)
-                ELKServersAvailable.append(ELKServer)
-                logging.info("INFO     ==> " + ELKServer +  " is Online ! Processing messages on this server")
+                ElasticServersFailed.remove(ElasticServer)
+                ElasticServersAvailable.append(ElasticServer)
+                logging.info("INFO     ==> " + ElasticServer +  " is Online ! Processing Metricbeat messages on this server")
             except:
                 # Nothing to do
                 pass
-    else:
-        # Checking if AllServersFailedDate var is defined
+
+    # Checking for unavailable Filebeat servers
+    if len(FilebeatServersFailed) != 0:
+             
+        # Choosing randomly one Filebeat server in the failed pool
+        FilebeatServer = random.choice(FilebeatServersFailed)
+        
+        # If FilebeatServer server is unavailable, we send a get request
         try:
-            # If var is already setted, unsetting it for queueing timer reset
-            AllServersFailedDate
-            del AllServersFailedDate
+            # Defining URL and credentials for web request
+            ELKCreds = (ELKUsername, ELKPassword)
+            FilebeatServerURL = ELKWebProtocol + '://' + FilebeatServer + ':' + FilebeatPort + '/'
+            
+            # Connect and send encoded JSON message     
+            FilebeatServerCnx = requests.session()
+            ELKAnswer = FilebeatServerCnx.get(FilebeatServerURL, auth=ELKCreds, timeout=5, verify=ELKCertificate)
 
-        except:
-            # If not defined, then nothing to do
-            pass
-    
-    # Checking if queued messages need to be sent in SendQueueArray and if ELK servers are available
-    if (len(SendQueueArray) > 0 and len(ELKServersAvailable) > 0):
-        # If yes, we send historical message uppon maximum configured value
-        for i in range(ReprocessingValueAtOnce):
-            # Poping the message from list with a try/catch to detect the end of the list
-            try:
-                # Poping list
-                JSONToSend = SendQueueArray.pop()
-                # Sending the message to ELK
-                SendToELK(JSONToSend)
-            except:
-                # The list is empty and all historical messages has been delivered
-                # Log
-                logging.info("INFO ==> All historical JSON metric messages has been processed")
-                # Exiting from loop
-                break
-    
-    # Checking if queued messages need to be sent in FilebeatSendQueueArray and if ELK servers are available
-    if (len(FilebeatSendQueueArray) > 0 and len(ELKServersAvailable) > 0):
-        # If yes, we send historical message uppon maximum configured value
-        for i in range(ReprocessingValueAtOnce):
-            # Poping the message from list with a try/catch to detect the end of the list
-            try:
-                # Poping list
-                JSONToSend = FilebeatSendQueueArray.pop()
-                # Sending the message to ELK
-                SendToELK(JSONToSend, "log")
-            except:
-                # The list is empty and all historical messages has been delivered
-                # Log
-                logging.info("INFO ==> All historical JSON log messages has been processed")
-                # Exiting from loop
-                break
+            # If the response was successful, no Exception will be raised
+            ELKAnswer.raise_for_status()
 
-    # Logging a message if the queues are not empty and all ELK servers are in failed state
-    TotalQueueLengt = 0
-    if len(SendQueueArray) > 0:
-        # Incrementing total queue lengt counter
-        TotalQueueLengt = TotalQueueLengt + len(SendQueueArray)
-    if len(FilebeatSendQueueArray) > 0:
-        # Incrementing total queue lengt counter
-        TotalQueueLengt = TotalQueueLengt + len(FilebeatSendQueueArray)
-    
-    # Logging queue count into log file
-    if TotalQueueLengt > 0:
-        LogString = "WARNING  ==>  " + str(TotalQueueLengt) + " historical JSON messages queued"
+        except HTTPError as http_err:
+            # ELK server is still unavailable
+            # Log
+            logging.info("WARNING  ==> " + FilebeatServer +  " is unavailable for Filebeat messages")
+            
+            # Creating the error stack file and filling error stack informations
+            # with open(CrashDumpCheckLog, 'a') as f:
+                # f.write('\n\n')
+                # f.write(str(datetime.datetime.now()))
+                # f.write(':\n')
+                # f.write(str(http_err))
+                # f.write(traceback.format_exc())
+                # f.write('\n')
+
+            # Print and log error stack for debug purpose
+            # logging.info('WARNING  ==> Please check ' + CrashDumpCheckLog + ' for more informations on HTTP errors')
+            # traceback.print_exc()
+
+        except Exception as err:
+            # ELK server is still unavailable
+            # Log
+            logging.info("WARNING  ==> " + FilebeatServer +  " is unavailable for Filebeat messages")
+            
+            # Creating the error stack file and filling error stack informations
+            # with open(CrashDumpCheckLog, 'a') as f:
+                # f.write('\n\n')
+                # f.write(str(datetime.datetime.now()))
+                # f.write(':\n')
+                # f.write(str(err))
+                # f.write(traceback.format_exc())
+                # f.write('\n')
+
+            # Print and log error stack for debug purpose
+            # logging.info('WARNING  ==> Please check ' + CrashDumpCheckLog + ' for more informations on HTTP errors')
+            # traceback.print_exc()
+        
+        else:
+            # ELK server is available, let's add it into the Available pool 
+            # Into a try/catch because some background processes can modify these value
+            try:
+                FilebeatServersFailed.remove(FilebeatServer)
+                FilebeatServersAvailable.append(FilebeatServer)
+                logging.info("INFO     ==> " + FilebeatServer +  " is Online ! Processing Filebeat messages on this server")
+            except:
+                # Nothing to do
+                pass
+
+    # Checking for unavailable Logstash servers
+    if len(LogstashServersFailed) != 0:
+                        
+        # Choosing randomly one Logstash server in the failed pool
+        LogstashServer = random.choice(LogstashServersFailed)
+        
+        # If LogstashServer server is unavailable, we send a get request
+        try:
+            # Defining URL and credentials for web request
+            ELKCreds = (ELKUsername, ELKPassword)
+            LogstashServerURL = ELKWebProtocol + '://' + LogstashServer + ':' + LogstashPort + '/'
+            
+            # Connect and send encoded JSON message
+            LogstashServerCnx = requests.session()
+
+            ELKAnswer = LogstashServerCnx.get(LogstashServerURL, auth=ELKCreds, timeout=5, verify=ELKCertificate)
+            
+            # If the response was successful, no Exception will be raised
+            ELKAnswer.raise_for_status()
+
+        except HTTPError as http_err:
+            # ELK server is still unavailable
+            # Log
+            logging.info("WARNING  ==> " + LogstashServer +  " is unavailable for Logstash messages")
+            
+            # Creating the error stack file and filling error stack informations
+            # with open(CrashDumpCheckLog, 'a') as f:
+                # f.write('\n\n')
+                # f.write(str(datetime.datetime.now()))
+                # f.write(':\n')
+                # f.write(str(http_err))
+                # f.write(traceback.format_exc())
+                # f.write('\n')
+
+            # Print and log error stack for debug purpose
+            # logging.info('WARNING  ==> Please check ' + CrashDumpCheckLog + ' for more informations on HTTP errors')
+            # traceback.print_exc()
+
+        except Exception as err:
+            # ELK server is still unavailable
+            # Log
+            logging.info("WARNING  ==> " + LogstashServer +  " is unavailable for Logstash messages")
+            
+            # Creating the error stack file and filling error stack informations
+            # with open(CrashDumpCheckLog, 'a') as f:
+                # f.write('\n\n')
+                # f.write(str(datetime.datetime.now()))
+                # f.write(':\n')
+                # f.write(str(err))
+                # f.write(traceback.format_exc())
+                # f.write('\n')
+
+            # Print and log error stack for debug purpose
+            # logging.info('WARNING  ==> Please check ' + CrashDumpCheckLog + ' for more informations on HTTP errors')
+            # traceback.print_exc()
+        
+        else:
+            # ELK server is available, let's add it into the Available pool 
+            # Into a try/catch because some background processes can modify these value
+            try:
+                LogstashServersFailed.remove(LogstashServer)
+                LogstashServersAvailable.append(LogstashServer)
+                logging.info("INFO     ==> " + LogstashServer +  " is Online ! Processing Logstash messages on this server")
+            except:
+                # Nothing to do
+                pass
+ 
+    # Checking if queued messages need to be sent in SendQueueArray and if one Elastic servers are available
+    if (len(SendQueueArray) > 0 and MetricbeatQueueFlushed == False and len(ElasticServersAvailable) > 0):
+        # If one Elastic server is available, we flush the current queue as messages are too old
+        SendJSON('Flush', 'Metricbeat')
+        # Logstring = 'INFO ==> Sending order to flush ' + str(len(SendQueueArray)) + ' JSON Metricbeat messages'
+        # logging.info(Logstring)
+        
+    if (len(FilebeatSendQueueArray) > 0 and FilebeatQueueFlushed == False and len(FilebeatServersAvailable) > 0):
+        # If one Filebeat server is available, we flush the current queue as messages are too old
+        SendJSON('Flush', 'Filebeat')
+        # Logstring = 'INFO ==> Sending order to flush ' + str(len(FilebeatSendQueueArray)) + ' JSON Filebeat messages'
+        # logging.info(Logstring)
+        
+    if (len(LogstashSendQueueArray) > 0 and LogstashQueueFlushed == False and len(LogstashServersAvailable) > 0):
+        # If one Logstash server is available, we flush the current queue as messages are too old
+        SendJSON('Flush', 'Logstash')
+        # Logstring = 'INFO ==> Sending order to flush ' + str(len(LogstashSendQueueArray)) + ' JSON Logstash messages'
+        # logging.info(Logstring)
+        
+    # Logging messages about queue states
+    if (len(SendQueueArray) > BulkMaxSize or len(ElasticServersAvailable) == 0):
+        LogString = "WARNING  ==>  " + str(len(SendQueueArray)) + " Metricbeat historical JSON messages queued"
         logging.info(LogString)
+    if (len(FilebeatSendQueueArray) > BulkMaxSize or len(FilebeatServersAvailable) == 0):
+        LogString = "WARNING  ==>  " + str(len(FilebeatSendQueueArray)) + " Filebeat historical JSON messages queued"
+        logging.info(LogString)
+    if (len(LogstashSendQueueArray) > BulkMaxSize or len(LogstashServersAvailable) == 0):
+        LogString = "WARNING  ==>  " + str(len(LogstashSendQueueArray)) + " Logstash historical JSON messages queued"
+        logging.info(LogString)
+        
+    # Finally, reseting Queue Flush states
+    MetricbeatQueueFlushed = False
+    FilebeatQueueFlushed = False
+    LogstashQueueFlushed = False
 
-def SendToELK(JSONToSend, LogType = "metric"):
+def SendToMetricbeat(BulkJSON, BulkSize):
     """ This function send a JSON message to the Metricbeat Logstash server.
         If Logstash is not available, the JSON message is queued for further reprocessing.
         
@@ -932,143 +1135,631 @@ def SendToELK(JSONToSend, LogType = "metric"):
     # Setting global vars
     global SendQueueArray
     global FilebeatSendQueueArray
+    global LogstashSendQueueArray
     global ELKCreds
-    global ELKServers
-    global ELKServer
-    global ELKServersAvailable
-    global ELKServersFailed
-    global ELKPort
+    global ElasticServers
+    global FilebeatServers
+    global LogstashServers
+    global ElasticServersAvailable
+    global ElasticServersFailed
+    global FilebeatServersAvailable
+    global FilebeatServersFailed
+    global LogstashServersAvailable
+    global LogstashServersFailed
+    global ElasticPort
+    global FilebeatPort
+    global LogstashPort
     global ELKCertificate
     global ELKWebProtocol
-    global ELKMetricIndexName
-    global ELKLogIndexName
-    global ElasticSearchServer
+    global ElasticIndexName
+    global FilebeatIndexName
+    global ElasticServerCnx
+    global FilebeatServerCnx
+    global LogstashServerCnx
+    global BulkMaxSize
+    global MetricbeatQueueFlushed
+    global FilebeatQueueFlushed
+    global LogstashQueueFlushed
 
-    # Choosing one availale ELK server in the pool, if any
-    if ELKServersAvailable:
-        # ELKServer = random.choice(ELKServersAvailable)
-        # print('ELK server choosen: ', ELKServer)
-        # print('Available list: ', ELKServersAvailable)
 
-        # Send Data to ELK server with a Try/Catch
+    # Choosing one availale Elastic server in the pool, if Message bucket is fill enough
+    ElasticServer = random.choice(ElasticServersAvailable)
+    # print('Elastic server choosen: ', ElasticServer)
+    # print('Available list: ', ElasticServersAvailable)
+
+    # Send Data to Elastic server with a Try/Catch
+    try:
+        # Define ELK url depending of index and choosen Elastic server
+        CurrentIndex = ElasticIndexName + '-' + ELKMonitoringVersion
+        ElasticServerURL = ELKWebProtocol + '://' + ElasticServer + ':' + ElasticPort + '/' + CurrentIndex + '/_doc/_bulk'
+        
+        # Defining credential for web request
+        ELKCreds = (ELKUsername, ELKPassword)
+
+        # Connect and send encoded data
+        ELKAnswer = ElasticServerCnx.post(ElasticServerURL, data = BulkJSON.encode("utf8"), headers={"Content-Type" : "application/x-ndjson; charset=utf-8"}, auth=ELKCreds, timeout=5, verify=ELKCertificate)
+
+        # If the response was successful, no Exception will be raised
+        ELKAnswer.raise_for_status()
+
+        # print('DEBUG: ELK Answer: ', str(ELKAnswer))
+        # print(str(ELKAnswer.text))
+        
+        # Removing those successfully sent messages from queue
+        del SendQueueArray[0:BulkSize]
+            
+
+    except HTTPError as http_err:
+        # We received HTTP exception
+        # Elastic server has fall down, queing message and setting Elastic server as unavailable
         try:
-            # If ELK server is available, we send the message
-            # Defining index name depending of current JSON data
-            if LogType == "metric":
-                ELKIndexName = ELKMetricIndexName
-            elif LogType == "log":
-                ELKIndexName = ELKLogIndexName
- 
-            # Define ELK url depending of index and choosen ELK server
-            CurrentELKIndex = ELKIndexName + '-' + ELKMonitoringVersion
-            ELKServerURL = ELKWebProtocol + '://' + ELKServer + ':' + ELKPort + '/' + CurrentELKIndex + '/_doc'
-            
-            # Defining credential for web request
-            ELKCreds = (ELKUsername, ELKPassword)
-
-            # Connect and send encoded data
-            ELKAnswer = ElasticSearchServer.post(ELKServerURL, data = JSONToSend.encode("utf8"), headers={"Content-Type" : "application/json; charset=utf-8"}, auth=ELKCreds, timeout=5, verify=ELKCertificate)
-
-            # If the response was successful, no Exception will be raised
-            ELKAnswer.raise_for_status()
-
-        except HTTPError as http_err:
-            # We received HTTP exception
-            # ELK server has fall down, queing message and setting ELK server as unavailable
-            try:
-                ELKServersAvailable.remove(ELKServer)
-                ELKServersFailed.append(ELKServer)
-            except:
-                # Nothing to do, server already removed
-                pass
-
-            # Send the failed work to the ELK Send queue depending of doc type
-            if LogType == "metric":
-                SendQueueArray.append(JSONToSend)
-                # Get a copy of the document for further check
-                # if len(JSONCheckMessage) == 0:
-                    # JSONCheckMessage = ('metric', JSONToSend)
-                    
-            # elif LogType == "log":
-                FilebeatSendQueueArray.append(JSONToSend)
-                # Get a copy of the document for further check
-                # if len(JSONCheckMessage) == 0:
-                    # JSONCheckMessage = ('log', JSONToSend)
-           
-            # Log
-            logging.info("WARNING  ==> " + ELKServer +  " became unvailable, queueing JSON messages")
-            
-            # Creating the error stack file and filling error stack informations
-            with open(CrashDumpSendLog, 'a') as f:
-                f.write('\n\n')
-                f.write(str(datetime.datetime.now()))
-                f.write(':\n')
-                f.write(str(http_err))
-                f.write(traceback.format_exc())
-                f.write('\nJSON message:\n')
-                f.write(JSONToSend)
-                f.write('\n')
-
-            # Print and log error stack for debug purpose
-            logging.info('WARNING  ==> Please check ' + CrashDumpSendLog + ' for more informations on HTTP errors')
+            ElasticServersAvailable.remove(ElasticServer)
+            ElasticServersFailed.append(ElasticServer)
+        except:
+            # Nothing to do, server already removed
             # traceback.print_exc()
+            pass
             
-
-        except Exception as err:
-            # We received another type of exception
-            # ELK server has fall down, queing message and setting ELK server as unavailable
-            # Making that into a try/catch because some background threads can act on that also and clea the content
-            try:
-                ELKServersAvailable.remove(ELKServer)
-                ELKServersFailed.append(ELKServer)
-            except:
-                # Nothing to do, server already removed
-                pass
-
-            # Send the failed work to the ELK Send queue depending of doc type
-            if LogType == "metric":
-                SendQueueArray.append(JSONToSend)
-                # Get a copy of the metric document for further check
-                # if len(JSONCheckMessage) == 0:
-                    # JSONCheckMessage = ('metric', JSONToSend)
-            elif LogType == "log":
-                FilebeatSendQueueArray.append(JSONToSend)
-                # Get a copy of the log document for further check
-                # if len(JSONCheckMessage) == 0:
-                    # JSONCheckMessage = ('log', JSONToSend)
-                    
-            # Log
-            logging.info("WARNING  ==> " + ELKServer +  " became unvailable, queueing JSON messages")
-            
-            # Creating the error stack file and filling error stack informations
-            with open(CrashDumpSendLog, 'a') as f:
-                f.write('\n\n')
-                f.write(str(datetime.datetime.now()))
-                f.write(':\n')
-                f.write(str(err))
-                f.write(traceback.format_exc())
-                f.write('\nJSON message:\n')
-                f.write(JSONToSend)
-                f.write('\n')
-
-            # Print and log error stack for debug purpose
-            logging.info('WARNING  ==> Please check ' + CrashDumpSendLog + ' for more informations on HTTP errors')
-            # traceback.print_exc()
-
-        # else:
-            # Message sent sucessfully
-            # pass
-
-    else:
-        # No ELK server available, waiting for next status check
-        # and send the failed work to the ELK Send queue depending of doc type
-        if LogType == "metric":
-            SendQueueArray.append(JSONToSend)
-        elif LogType == "log":
-            FilebeatSendQueueArray.append(JSONToSend)
         # Log
-        # logging.info("WARNING  ==> No ELK server available at this time, queueing JSON messages...")
+        logging.info("WARNING  ==> " + ElasticServer +  " became unvailable, queueing Metricbeat JSON messages")
+        # print(str(ELKAnswer))
+        # print(str(ELKAnswer.text))
+        
+        # Creating the error stack file and filling error stack informations
+        with open(CrashDumpSendLog, 'a') as f:
+            f.write('\n\n')
+            f.write(str(datetime.datetime.now()))
+            f.write(':\n')
+            f.write(str(http_err))
+            f.write(traceback.format_exc())
+            # f.write('\nJSON message:\n')
+            # f.write(JSONToSend)
+            f.write('\n')
+
+        # Print and log error stack for debug purpose
+        logging.info('WARNING  ==> Please check ' + CrashDumpSendLog + ' for more informations on HTTP errors')
+        # traceback.print_exc()
+        
+    except Exception as err:
+        # We received another type of exception
+        # Elastic server has fall down, queing message and setting Elastic server as unavailable
+        # Making that into a try/catch because some background threads can act on that also and clea the content
+        try:
+            ElasticServersAvailable.remove(ElasticServer)
+            ElasticServersFailed.append(ElasticServer)
+        except:
+            # Nothing to do, server already removed
+            # traceback.print_exc()
+            pass
+        
+        # Log
+        logging.info("WARNING  ==> " + ElasticServer +  " became unvailable, queueing Metricbeat JSON messages")
+        # print(str(ELKAnswer))
+        # print(str(ELKAnswer.text))
+        
+        # Creating the error stack file and filling error stack informations
+        with open(CrashDumpSendLog, 'a') as f:
+            f.write('\n\n')
+            f.write(str(datetime.datetime.now()))
+            f.write(':\n')
+            f.write(str(err))
+            f.write(traceback.format_exc())
+            # f.write('\nJSON message:\n')
+            # f.write(JSONToSend)
+            f.write('\n')
+
+        # Print and log error stack for debug purpose
+        logging.info('WARNING  ==> Please check ' + CrashDumpSendLog + ' for more informations on HTTP errors')
+        # traceback.print_exc()
         pass
+ 
+def SendToFilebeat(BulkJSON, BulkSize):
+    """ This function send a JSON message to the Metricbeat Logstash server.
+        If Logstash is not available, the JSON message is queued for further reprocessing.
+        
+        Please refer to README.md
+    
+        TODO: Describe the function, all vars and its content
+    """
+    # Setting global vars
+    global SendQueueArray
+    global FilebeatSendQueueArray
+    global LogstashSendQueueArray
+    global ELKCreds
+    global ElasticServers
+    global FilebeatServers
+    global LogstashServers
+    global ElasticServersAvailable
+    global ElasticServersFailed
+    global FilebeatServersAvailable
+    global FilebeatServersFailed
+    global LogstashServersAvailable
+    global LogstashServersFailed
+    global ElasticPort
+    global FilebeatPort
+    global LogstashPort
+    global ELKCertificate
+    global ELKWebProtocol
+    global ElasticIndexName
+    global FilebeatIndexName
+    global ElasticServerCnx
+    global FilebeatServerCnx
+    global LogstashServerCnx
+    global BulkMaxSize
+    global MetricbeatQueueFlushed
+    global FilebeatQueueFlushed
+    global LogstashQueueFlushed
+
+
+    # Choosing one availale Filebeat server in the pool, if Message bucket is fill enough
+    FilebeatServer = random.choice(FilebeatServersAvailable)
+    # print('Filebeat server choosen: ', FilebeatServer)
+    # print('Available list: ', FilebeatServersAvailable)
+
+    # Send Data to Filebeat server with a Try/Catch
+    try:
+        # Define ELK url depending of index and choosen Filebeat server
+        CurrentIndex = FilebeatIndexName + '-' + ELKMonitoringVersion
+        FilebeatServerURL = ELKWebProtocol + '://' + FilebeatServer + ':' + FilebeatPort + '/' + CurrentIndex + '/_doc/_bulk'
+        
+        # Defining credential for web request
+        ELKCreds = (ELKUsername, ELKPassword)
+
+        # Connect and send encoded data
+        ELKAnswer = FilebeatServerCnx.post(FilebeatServerURL, data = BulkJSON.encode("utf8"), headers={"Content-Type" : "application/x-ndjson; charset=utf-8"}, auth=ELKCreds, timeout=5, verify=ELKCertificate)
+
+        # If the response was successful, no Exception will be raised
+        ELKAnswer.raise_for_status()
+
+        # print('DEBUG: ELK Answer: ', str(ELKAnswer))
+        # print(str(ELKAnswer.text))
+        
+        # Removing those successfully sent messages from queue
+        del FilebeatSendQueueArray[0:BulkSize]
+        
+
+    except HTTPError as http_err:
+        # We received HTTP exception
+        # Filebeat server has fall down, queing message and setting Filebeat server as unavailable
+        try:
+            FilebeatServersAvailable.remove(FilebeatServer)
+            FilebeatServersFailed.append(FilebeatServer)
+        except:
+            # Nothing to do, server already removed
+            # traceback.print_exc()
+            pass
+            
+        # Log
+        logging.info("WARNING  ==> " + FilebeatServer +  " became unvailable, queueing Filebeat JSON messages")
+        # print(str(ELKAnswer))
+        # print(str(ELKAnswer.text))
+        
+        # Creating the error stack file and filling error stack informations
+        with open(CrashDumpSendLog, 'a') as f:
+            f.write('\n\n')
+            f.write(str(datetime.datetime.now()))
+            f.write(':\n')
+            f.write(str(http_err))
+            f.write(traceback.format_exc())
+            # f.write('\nJSON message:\n')
+            # f.write(JSONToSend)
+            f.write('\n')
+
+        # Print and log error stack for debug purpose
+        logging.info('WARNING  ==> Please check ' + CrashDumpSendLog + ' for more informations on HTTP errors')
+        # traceback.print_exc()
+        
+    except Exception as err:
+        # We received another type of exception
+        # Filebeat server has fall down, queing message and setting Filebeat server as unavailable
+        # Making that into a try/catch because some background threads can act on that also and clea the content
+        try:
+            FilebeatServersAvailable.remove(FilebeatServer)
+            FilebeatServersFailed.append(FilebeatServer)
+        except:
+            # Nothing to do, server already removed
+            # traceback.print_exc()
+            pass
+        
+        # Log
+        logging.info("WARNING  ==> " + FilebeatServer +  " became unvailable, queueing Filebeat JSON messages")
+        
+        # print(str(ELKAnswer))
+        # print(str(ELKAnswer.text))
+        
+        # Creating the error stack file and filling error stack informations
+        with open(CrashDumpSendLog, 'a') as f:
+            f.write('\n\n')
+            f.write(str(datetime.datetime.now()))
+            f.write(':\n')
+            f.write(str(err))
+            f.write(traceback.format_exc())
+            # f.write('\nJSON message:\n')
+            # f.write(JSONToSend)
+            f.write('\n')
+
+        # Print and log error stack for debug purpose
+        logging.info('WARNING  ==> Please check ' + CrashDumpSendLog + ' for more informations on HTTP errors')
+        # traceback.print_exc()
+        pass
+
+def SendToLogstash(BulkJSON, BulkSize):
+    """ This function send a JSON message to the Metricbeat Logstash server.
+        If Logstash is not available, the JSON message is queued for further reprocessing.
+        
+        Please refer to README.md
+    
+        TODO: Describe the function, all vars and its content
+    """
+    # Setting global vars
+    global SendQueueArray
+    global FilebeatSendQueueArray
+    global LogstashSendQueueArray
+    global ELKCreds
+    global ElasticServers
+    global FilebeatServers
+    global LogstashServers
+    global ElasticServersAvailable
+    global ElasticServersFailed
+    global FilebeatServersAvailable
+    global FilebeatServersFailed
+    global LogstashServersAvailable
+    global LogstashServersFailed
+    global ElasticPort
+    global FilebeatPort
+    global LogstashPort
+    global ELKCertificate
+    global ELKWebProtocol
+    global ElasticIndexName
+    global FilebeatIndexName
+    global ElasticServerCnx
+    global FilebeatServerCnx
+    global LogstashServerCnx
+    global BulkMaxSize
+    global MetricbeatQueueFlushed
+    global FilebeatQueueFlushed
+    global LogstashQueueFlushed
+
+
+    # Choosing one availale Logstash server in the pool, if Message bucket is fill enough
+    LogstashServer = random.choice(LogstashServersAvailable)
+    # print('Logstash server choosen: ', LogstashServer)
+    # print('Available list: ', LogstashServersAvailable)
+
+    # Send Data to Logstash server with a Try/Catch
+    try:
+        # Define ELK url depending of index and choosen Logstash server
+        LogstashServerURL = ELKWebProtocol + '://' + LogstashServer + ':' + LogstashPort + '/_doc/_bulk'
+        
+        # Defining credential for web request
+        ELKCreds = (ELKUsername, ELKPassword)
+
+        # Connect and send encoded data
+        ELKAnswer = LogstashServerCnx.post(LogstashServerURL, data = BulkJSON.encode("utf8"), headers={"Content-Type" : "application/x-ndjson; charset=utf-8"}, auth=ELKCreds, timeout=5, verify=ELKCertificate)
+
+        # If the response was successful, no Exception will be raised
+        ELKAnswer.raise_for_status()
+
+        # print('DEBUG: ELK Answer: ', str(ELKAnswer))
+        # print(str(ELKAnswer.text))
+        
+        # Removing those successfully sent messages from queue
+        del LogstashSendQueueArray[0:BulkSize]
+
+    except HTTPError as http_err:
+        # We received HTTP exception
+        # Logstash server has fall down, queing message and setting Logstash server as unavailable
+        try:
+            LogstashServersAvailable.remove(LogstashServer)
+            LogstashServersFailed.append(LogstashServer)
+        except:
+            # Nothing to do, server already removed
+            # traceback.print_exc()
+            pass
+            
+        # Log
+        logging.info("WARNING  ==> " + LogstashServer +  " became unvailable, queueing Logstash JSON messages")
+        # print(str(ELKAnswer))
+        # print(str(ELKAnswer.text))
+        
+        # Creating the error stack file and filling error stack informations
+        with open(CrashDumpSendLog, 'a') as f:
+            f.write('\n\n')
+            f.write(str(datetime.datetime.now()))
+            f.write(':\n')
+            f.write(str(http_err))
+            f.write(traceback.format_exc())
+            # f.write('\nJSON message:\n')
+            # f.write(JSONToSend)
+            f.write('\n')
+
+        # Print and log error stack for debug purpose
+        logging.info('WARNING  ==> Please check ' + CrashDumpSendLog + ' for more informations on HTTP errors')
+        # traceback.print_exc()
+        
+    except Exception as err:
+        # We received another type of exception
+        # Logstash server has fall down, queing message and setting Logstash server as unavailable
+        # Making that into a try/catch because some background threads can act on that also and clea the content
+        try:
+            LogstashServersAvailable.remove(LogstashServer)
+            LogstashServersFailed.append(LogstashServer)
+        except:
+            # Nothing to do, server already removed
+            # traceback.print_exc()
+            pass
+        
+        # Log
+        logging.info("WARNING  ==> " + LogstashServer +  " became unvailable, queueing Logstash JSON messages")
+        
+        # print(str(ELKAnswer))
+        # print(str(ELKAnswer.text))
+        
+        # Creating the error stack file and filling error stack informations
+        with open(CrashDumpSendLog, 'a') as f:
+            f.write('\n\n')
+            f.write(str(datetime.datetime.now()))
+            f.write(':\n')
+            f.write(str(err))
+            f.write(traceback.format_exc())
+            # f.write('\nJSON message:\n')
+            # f.write(JSONToSend)
+            f.write('\n')
+
+        # Print and log error stack for debug purpose
+        logging.info('WARNING  ==> Please check ' + CrashDumpSendLog + ' for more informations on HTTP errors')
+        # traceback.print_exc()
+        pass
+ 
+def SendJSON(JSONToSend, MesssageOutput = 'Metricbeat'):
+    """ This function send a JSON message to the Metricbeat Logstash server.
+        If Logstash is not available, the JSON message is queued for further reprocessing.
+        
+        Please refer to README.md
+    
+        TODO: Describe the function, all vars and its content
+    """
+    # Setting global vars
+    global SendQueueArray
+    global FilebeatSendQueueArray
+    global LogstashSendQueueArray
+    global ELKCreds
+    global ElasticServers
+    global FilebeatServers
+    global LogstashServers
+    global ElasticServersAvailable
+    global ElasticServersFailed
+    global FilebeatServersAvailable
+    global FilebeatServersFailed
+    global LogstashServersAvailable
+    global LogstashServersFailed
+    global ElasticPort
+    global FilebeatPort
+    global LogstashPort
+    global ELKCertificate
+    global ELKWebProtocol
+    global ElasticIndexName
+    global FilebeatIndexName
+    global ElasticServerCnx
+    global FilebeatServerCnx
+    global LogstashServerCnx
+    global BulkMaxSize
+    global MetricbeatQueueFlushed
+    global FilebeatQueueFlushed
+    global LogstashQueueFlushed
+      
+    ### Metricbeat Pool
+    if MesssageOutput == 'Metricbeat':
+
+        # Checking if JSON message need to be queued or sent
+        if (ElasticServersAvailable and len(SendQueueArray) >= BulkMaxSize and JSONToSend != 'Flush'):
+
+            # Checking if history messages are in the queue
+            if len(SendQueueArray) == BulkMaxSize:
+                # No historical message present
+                if BulkMaxSize <= 1:
+                    # If BulkMaxSize is 0 or 1, we sent the JSON message directly
+                    BulkJSON = '\n{ "index":{} }\n' + JSONToSend + '\n'
+                        
+                else:
+                    # Creating Bulk JSON message
+                    separator = '\n{ "index":{} }\n'
+                    BulkJSON = '{ "index":{} }\n' + str(separator.join(SendQueueArray[0:BulkMaxSize])) + '\n'
+                    BulkSize = BulkMaxSize
+                    
+                    # Queuing the current message from function call, waiting for next loop execution
+                    SendQueueArray.append(JSONToSend)
+                    
+            else:
+                # Historical messages are queued, let's send them one by one to the current message
+                # Creating Bulk JSON message
+                BulkJSON = '{ "index":{} }\n' + str(SendQueueArray[0]) + '\n{ "index":{} }\n' + JSONToSend + '\n' 
+                BulkSize = 1
+            
+            # Recording that queue has been flushed, or tried to
+            MetricbeatQueueFlushed = True
+            SendToMetricbeat(BulkJSON, BulkSize)
+
+        else:
+            # Checking if flush order has been sent
+            if JSONToSend == 'Flush':
+                # Creating Bulk JSON message and flushing the queue content
+                if BulkMaxSize <= 1:
+                    # If BulkMaxSize is 0 or 1, we sent the message directly
+                    BulkJSON = '\n{ "index":{} }\n' + SendQueueArray[0] + '\n'
+                    
+                    # Log
+                    # LogString = "INFO  ==>  " + str(len(SendQueueArray)) + " JSON Metricbeat messages has been FORCE flushed"
+                    # logging.info(LogString)
+                    
+                    # Recording that queue has been flushed, or tried to
+                    MetricbeatQueueFlushed = True
+                    SendToMetricbeat(BulkJSON, 1)
+
+                else:
+                    # Checking for the correct size of the flush
+                    if len(SendQueueArray) > BulkMaxSize:
+                        BulkSize = BulkMaxSize
+                    else:
+                        BulkSize = len(SendQueueArray)
+                    
+                    separator = '\n{ "index":{} }\n'
+                    BulkJSON = '{ "index":{} }\n' + str(separator.join(SendQueueArray[0:len(SendQueueArray)])) + '\n'
+                    
+                    # Log
+                    # LogString = "INFO  ==>  " + str(len(SendQueueArray)) + " JSON Metricbeat messages has been flushed"
+                    # logging.info(LogString)
+                    
+                    # Recording that queue has been flushed, or tried to
+                    MetricbeatQueueFlushed = True
+                    SendToMetricbeat(BulkJSON, BulkSize)
+                    
+                    
+   
+            else:                
+                # No Elastic server available or Bulk max size not reached, waiting for next loop
+                SendQueueArray.append(JSONToSend)
+            
+    ### Filebeat Pool
+    if MesssageOutput == 'Filebeat':
+
+        # Checking if JSON message need to be queued or sent
+        if (FilebeatServersAvailable and len(FilebeatSendQueueArray) >= BulkMaxSize and JSONToSend != 'Flush'):
+
+            # Checking if history messages are in the queue
+            if len(FilebeatSendQueueArray) == BulkMaxSize:
+                # No historical message present
+                if BulkMaxSize <= 1:
+                    # If BulkMaxSize is 0 or 1, we sent the JSON message directly
+                    BulkJSON = '\n{ "index":{} }\n' + JSONToSend + '\n'
+                        
+                else:
+                    # Creating Bulk JSON message
+                    separator = '\n{ "index":{} }\n'
+                    BulkJSON = '{ "index":{} }\n' + str(separator.join(FilebeatSendQueueArray[0:BulkMaxSize])) + '\n'
+                    BulkSize = BulkMaxSize
+                    
+                    # Queuing the current message from function call, waiting for next loop execution
+                    FilebeatSendQueueArray.append(JSONToSend)
+                    
+            else:
+                # Historical messages are queued, let's send them one by one to the current message
+                # Creating Bulk JSON message
+                BulkJSON = '{ "index":{} }\n' + str(FilebeatSendQueueArray[0]) + '\n{ "index":{} }\n' + JSONToSend + '\n' 
+                BulkSize = 1
+            
+            # Recording that queue has been flushed, or tried to
+            FilebeatQueueFlushed = True
+            SendToFilebeat(BulkJSON, BulkSize)
+
+        else:
+            # Checking if flush order has been sent
+            if JSONToSend == 'Flush':
+                # Creating Bulk JSON message and flushing the queue content
+                if BulkMaxSize <= 1:
+                    # If BulkMaxSize is 0 or 1, we sent the message directly
+                    BulkJSON = '\n{ "index":{} }\n' + FilebeatSendQueueArray[0] + '\n'
+                    
+                    # Log
+                    # LogString = "INFO  ==>  " + str(len(FilebeatSendQueueArray)) + " JSON Filebeat messages has been FORCE flushed"
+                    logging.info(LogString)
+                    
+                    # Recording that queue has been flushed, or tried to
+                    FilebeatQueueFlushed = True
+                    SendToFilebeat(BulkJSON, 1)
+
+                else:
+                    # Checking for the correct size of the flush
+                    if len(FilebeatSendQueueArray) > BulkMaxSize:
+                        BulkSize = BulkMaxSize
+                    else:
+                        BulkSize = len(FilebeatSendQueueArray)
+                        
+                    separator = '\n{ "index":{} }\n'
+                    BulkJSON = '{ "index":{} }\n' + str(separator.join(FilebeatSendQueueArray[0:BulkSize])) + '\n'
+                    
+                    # Log
+                    # LogString = "INFO  ==>  " + str(len(FilebeatSendQueueArray)) + " JSON Filebeat messages has been flushed"
+                    # logging.info(LogString)
+                    
+                    # Recording that queue has been flushed, or tried to
+                    FilebeatQueueFlushed = True
+                    SendToFilebeat(BulkJSON, BulkSize)
+   
+            else:                
+                # No Filebeat server available or Bulk max size not reached, waiting for next loop
+                FilebeatSendQueueArray.append(JSONToSend)
+
+        
+    ### Logstash Pool
+    if MesssageOutput == 'Logstash':
+
+        # Checking if JSON message need to be queued or sent
+        if (LogstashServersAvailable and len(LogstashSendQueueArray) >= BulkMaxSize and JSONToSend != 'Flush'):
+
+            # Checking if history messages are in the queue
+            if len(LogstashSendQueueArray) == BulkMaxSize:
+                # No historical message present
+                if BulkMaxSize <= 1:
+                    # If BulkMaxSize is 0 or 1, we sent the JSON message directly
+                    BulkJSON = '\n{ "index":{} }\n' + JSONToSend + '\n'
+                        
+                else:
+                    # Creating Bulk JSON message
+                    separator = '\n{ "index":{} }\n'
+                    BulkJSON = '{ "index":{} }\n' + str(separator.join(LogstashSendQueueArray[0:BulkMaxSize])) + '\n'
+                    BulkSize = BulkMaxSize
+                    
+                    # Queuing the current message from function call, waiting for next loop execution
+                    LogstashSendQueueArray.append(JSONToSend)
+                    
+            else:
+                # Historical messages are queued, let's send them one by one to the current message
+                # Creating Bulk JSON message
+                BulkJSON = '{ "index":{} }\n' + str(LogstashSendQueueArray[0]) + '\n{ "index":{} }\n' + JSONToSend + '\n' 
+                BulkSize = 1
+            
+            # Recording that queue has been flushed, or tried to
+            LogstashQueueFlushed = True
+            SendToLogstash(BulkJSON, BulkSize)
+
+        else:
+            # Checking if flush order has been sent
+            if JSONToSend == 'Flush':
+                # Creating Bulk JSON message and flushing the queue content
+                if BulkMaxSize <= 1:
+                    # If BulkMaxSize is 0 or 1, we sent the message directly
+                    BulkJSON = '\n{ "index":{} }\n' + LogstashSendQueueArray[0] + '\n'
+                    
+                    # Log
+                    # LogString = "INFO  ==>  " + str(len(LogstashSendQueueArray)) + " JSON Logstash messages has been FORCE flushed"
+                    # logging.info(LogString)
+                    
+                    # Recording that queue has been flushed, or tried to
+                    LogstashQueueFlushed = True
+                    SendToLogstash(BulkJSON, 1)
+
+                else:
+                    # Checking for the correct size of the flush
+                    if len(LogstashSendQueueArray) > BulkMaxSize:
+                        BulkSize = BulkMaxSize
+                    else:
+                        BulkSize = len(LogstashSendQueueArray)
+                    
+                    separator = '\n{ "index":{} }\n'
+                    BulkJSON = '{ "index":{} }\n' + str(separator.join(LogstashSendQueueArray[0:len(LogstashSendQueueArray)])) + '\n'
+                    
+                    # Log
+                    # LogString = "INFO  ==>  " + str(len(LogstashSendQueueArray)) + " JSON Logstash messages has been flushed"
+                    # logging.info(LogString)
+                    
+                    # Recording that queue has been flushed, or tried to
+                    LogstashQueueFlushed = True
+                    SendToLogstash(BulkJSON, BulkSize)
+   
+            else:                
+                # No Logstash server available or Bulk max size not reached, waiting for next loop
+                LogstashSendQueueArray.append(JSONToSend)
 
 def WorkOnMetrics():
     """ This function will check execution timers and, if necessary, execute item work.
@@ -1108,6 +1799,27 @@ def WorkOnMetrics():
         
         # Exiting
         # os._exit(2)
+        
+    try:
+        # Checking timer for ErrptLog
+        ComparisonTimer = CompareTimer("ErrptLog", ErrptLogWaitValue)
+        if ComparisonTimer != devnull:
+            ErrptLog(ComparisonTimer)
+    except Exception as e:
+        # Metricset has crashed
+        # Creating the crash dump file and filling it with crash dump data
+        with open(CrashDumpDaemon, 'a') as f:
+            f.write('\n\n')
+            f.write(str(datetime.datetime.now()))
+            f.write(':\n')
+            f.write(str(e))
+            f.write(traceback.format_exc())
+            f.write('\n')
+
+        # Print and log error stack for debug purpose
+        logging.info('\n Metraixbeat encountered an error ! See ' + CrashDumpDaemon + ' for more informations\n')
+        print('\n Metraixbeat encountered an error ! See ', CrashDumpDaemon, ' for more informations\n')
+        # traceback.print_exc()
     
     try:
         # Checking timer for SystemLoad
@@ -1447,12 +2159,13 @@ def WorkOnMetrics():
         # Gathering config values from splitted line
         CustomMetricItemOSScript = CustomMetricSplitedLine[0]
         CustomMetricItemWaitValue = int(CustomMetricSplitedLine[1])
+        CustomMetricItemOutput = CustomMetricSplitedLine[2] 
         
         try:
             # Checking timer for the current Custom Metric into try/catch, third parameter is only for user log formating
             ComparisonTimer = CompareTimer(CustomMetricItemName, CustomMetricItemWaitValue, '(Custom metrics)')
             if ComparisonTimer != devnull:
-                CustomMetricExec(CustomMetricItemOSScript, CustomMetricItemName, ComparisonTimer)
+                CustomMetricExec(CustomMetricItemOSScript, CustomMetricItemName, ComparisonTimer, CustomMetricItemOutput)
         except Exception as e:
             # Metricset has crashed
             # Creating the crash dump file and filling it with crash dump data
@@ -1485,17 +2198,19 @@ def FilebeatTail(FilebeatConfigName):
     global FilebeatConfigsArray
     global TailStateArray
     global TargetFileCurrentPosArray
-    global TargetFileMTimeCountArray
+    # global TargetFileMTimeCountArray
 
     # Getting parameters from FilebeatConfigsArray
     ConfigSplitLine = FilebeatConfigsArray[FilebeatConfigName].split(',')
     CurrentTargetFile = ConfigSplitLine[0]
     TargetFile = ConfigSplitLine[1]
-    EGREPString = ConfigSplitLine[2]
+    PatternMatch = ConfigSplitLine[2]
     LastTailLine = ConfigSplitLine[3]
     StartInode = ConfigSplitLine[4]
     TargetSize = ConfigSplitLine[5]
     MultilineSeparator = ConfigSplitLine[6]
+    Output = ConfigSplitLine[7]
+
 
     # Defining name for the thread
     FilebeatConfigThreadName = FilebeatConfigName + 'Thread'.replace('.','')
@@ -1580,63 +2295,8 @@ def FilebeatTail(FilebeatConfigName):
             # Log
             logging.info("            * Refreshing filename: Ok !")
 
-        # Checking if CurrentTargetFile is older than 1 day
-        # IMPROVEMENT /SAFETY - What else ?
-        # If yes, reseting Tail thread by safety (maybe something happened...)
-        # Get current date
-        now  = datetime.datetime.today()
-
-        # Get modification datetime of the CurrentTargetFile
-        CurrentTargetFileMTime = datetime.datetime.utcfromtimestamp(os.path.getmtime(CurrentTargetFile))
-
-        # Calculating time diff between actual date and last mdofication date
-        dif = (now - CurrentTargetFileMTime)
-
-        # Using try/catch to detect if value exists in dictionary
-        try:
-            # Testing var
-            TargetFileMTimeCountArray[FilebeatConfigName]
-
-            # Chechking if file is older then 1 day
-            if dif > datetime.timedelta(days = 1):
-                # If yes, checking retry counter
-                if int(TargetFileMTimeCountArray[FilebeatConfigName]) < 10:
-                    # The modification time is greater than 1 day and retry counter is not reached
-                    # Incrementing counter in dictionary
-                    TargetFileMTimeCountArray[FilebeatConfigName] = int(TargetFileMTimeCountArray[FilebeatConfigName]) + 1
-                    # Log
-                    LogString = "            * Modification time is too old: " + str(TargetFileMTimeCountArray[FilebeatConfigName]) + "/" + str(TailReloadValue) + " retries !"
-                    logging.info(LogString)
-                    # Exiting function
-                    return
-
-                elif int(TargetFileMTimeCountArray[FilebeatConfigName]) >= 10:
-                    # Count is reached, refreshing Tail thread
-                    # Let's send order to stop background tail process on that CurrentTargetFile
-                    TailStateArray[FilebeatConfigName] = False
-
-                    # Resting retry count in dictionary
-                    TargetFileMTimeCountArray[FilebeatConfigName] = 0
-
-                    # Log
-                    logging.info("            * The CurrentTargetFile has not been modified since 1 day: stopping Tail thread by safety !")
-                    # Exiting function
-                    return
-        except:
-            # Value not initialized in dictionary, setting it
-            TargetFileMTimeCountArray[FilebeatConfigName] = 0
-            # Log
-            logging.info("            * Modification time follow-up initialization... ")
-            # Exiting function
-            return
-
-        else:
-            # Not older than 1 day
-            # Log
-            logging.info("            * Modification time: Ok !")
-
     else:
-        # No thread are running for this config, let's start a new one if possible
+        # No thread are running for this config, let's start a new one
         
         # Converting date format, if any, in target file  
         CurrentTargetFile = ConvertFileName(TargetFile)
@@ -1655,15 +2315,18 @@ def FilebeatTail(FilebeatConfigName):
             CurrentTargetFileInode = str(os.stat(CurrentTargetFile).st_ino)
 
             # Formating string and storing into
-            ConfigString = CurrentTargetFile + ',' + TargetFile + ',' + EGREPString + ',' + LastTailLine + ',' + CurrentTargetFileInode + ',' + CurrentTargetFileSize + ',' + MultilineSeparator
+            ConfigString = CurrentTargetFile + ',' + TargetFile + ',' + PatternMatch + ',' + LastTailLine + ',' + CurrentTargetFileInode + ',' + CurrentTargetFileSize + ',' + MultilineSeparator + ',' + Output
             FilebeatConfigsArray[FilebeatConfigName] = ConfigString
 
             # Launching thread
-            FilebeatConfigThread = threading.Thread(target=TailPythonStyle, name=FilebeatConfigThreadName, args=(FilebeatConfigName, CurrentTargetFile, EGREPString, MultilineSeparator))
+            FilebeatConfigThread = threading.Thread(target=TailPythonStyle, name=FilebeatConfigThreadName, args=(FilebeatConfigName, CurrentTargetFile, PatternMatch, MultilineSeparator, Output))
             FilebeatConfigThread.start()
         else:
             # The file does not exists
             logging.info("    * Initiating tail process on Target File " + CurrentTargetFile + " impossible, the file does not exists !")
+            
+            # Initializing state value to start tail from line 1 when file will be available
+            TargetFileCurrentPosArray[FilebeatConfigName] = 0
 
     # Debug
     # print('\nDEBUG\n')
@@ -1672,7 +2335,7 @@ def FilebeatTail(FilebeatConfigName):
     # print('<!> DEBUG ', 'TargetInfoPattern', TargetInfoPattern)
     # print('<!> DEBUG ', 'TargetWarningPattern', TargetWarningPattern)
     # print('<!> DEBUG ', 'TargetErrorPattern', TargetErrorPattern)
-    # print('<!> DEBUG ', 'EGREPString', EGREPString)
+    # print('<!> DEBUG ', 'PatternMatch', PatternMatch)
     # print('<!> DEBUG ', 'LastTailLine', LastTailLine)
     # print('<!> DEBUG ', 'StartInode', StartInode)
     # print('<!> DEBUG ', 'TargetSize', TargetSize)
@@ -1680,7 +2343,7 @@ def FilebeatTail(FilebeatConfigName):
     # print('\nFINDEBUG\n')
     pass
 
-def TailPythonStyle(FilebeatConfigName, TargetFile, EGREPString, MultilineSeparator):
+def TailPythonStyle(FilebeatConfigName, TargetFile, PatternMatch, MultilineSeparator, Output):
     """ This function will tail a txt file in python style, as tail does not esists :-(
 
         Please refer to README.md
@@ -1693,7 +2356,7 @@ def TailPythonStyle(FilebeatConfigName, TargetFile, EGREPString, MultilineSepara
     global TargetFileCurrentPosArray
 
     # Remove "" from input vars
-    EGREPString = EGREPString.replace('"','')
+    PatternMatch = PatternMatch.replace('"','')
     MultilineSeparator = MultilineSeparator.replace('"','')
 
     # Setting vars for threads follow up
@@ -1708,117 +2371,286 @@ def TailPythonStyle(FilebeatConfigName, TargetFile, EGREPString, MultilineSepara
 
     # Positionning cursor at the end of the file
     # Checking if TargetFileCurrentPosArray[FilebeatConfigName] is empty with try/catch
+
     try:
-        # If value exists in dictionary, that's to say parsing was already running in this daemon execution
+        # If value exists in plugin state dictionary, that's to say parsing was already running in this daemon execution
         # We reset it to 0 to start parsing the new file from begining
         TargetFileCurrentPosArray[FilebeatConfigName]
+        OpenedTargetFile.seek(0)
+        
     except:
         # Na value inside dictionnary, that's to say this is the first daemon execution
         # We put the cursor on the last line of the file
         OpenedTargetFile.seek(TargetFileSize)
 
-    # Going to make all work into try/catch to avoid exception and daemon crash
-    # if something unexpected happen to the TargetFile
-    try:
-        # Start looping indefintly until TailStateArray[ThreadName] is different then True
-        # It give control on this sub-thread from main thread to stop/clean it when necessary
-        while (True and TailStateArray[FilebeatConfigName]):
-            # Storing the current TargetFile's "last line" position
-            TargetFileCurrentPosArray[FilebeatConfigName] = OpenedTargetFile.tell()
-            # Gathering new lines if any
-            NewLine = OpenedTargetFile.readline()
+    # Multi-line mode
+    
+    if (len(MultilineSeparator) != 0):
+        # Going to make all work into try/catch to avoid exception and daemon crash
+        # if something unexpected happen to the TargetFile
+        
+        # Initializing vars
+        LogLineStart = False
+        SeqIdTimestamp = ''
+        FinalLogLine = ''
+        Matched = False
+        TailTimer = 0
+        
+        try:
+            # Start looping indefintly until TailStateArray[ThreadName] is different then True
+            # It give control on this sub-thread from main thread to stop/clean it when necessary
+            while (True and TailStateArray[FilebeatConfigName]):
+                # Storing the current TargetFile's "last line" position
+                TargetFileCurrentPosArray[FilebeatConfigName] = OpenedTargetFile.tell()
+                # Gathering new lines if any
+                NewLine = OpenedTargetFile.readline()
 
-            # Checking if there are new lines happened to the TargetFile
-            if not NewLine:
-                # No new line detected
-                # Then we set file position to the previous recoreded one
-                # to check any new lines in the next loop execution
-                OpenedTargetFile.seek(TargetFileCurrentPosArray[FilebeatConfigName])
-                # Going to sleep 1 sec to save CPU
-                time.sleep(1)
-
-            else:
-                # Removing \n at the end of thr readline() output
-                NewLine = re.sub('\n$', '', NewLine)
-                # New line has been written, let's store datetime and check for patterns
-                SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
-                
-                # First we check if any of the three pattern is detected to save time
-                if bool(re.search(EGREPString, NewLine)):
+                # Checking if there are new lines happened to the TargetFile
+                if not NewLine:
+                    # No new line detected
+                    # Then we set file position to the previous recoreded one
+                    # to check any new lines in the next loop execution
+                    OpenedTargetFile.seek(TargetFileCurrentPosArray[FilebeatConfigName])
                     
-                    # Getting the current line of the file
-                    MatchLineOffset = OpenedTargetFile.tell()
+                    # Going to sleep 1 sec to save CPU
+                    time.sleep(1)
                     
-                    # If match is detected, we check which pattern it is
-                    for Pattern in EGREPString.split('|'):
-                        if (bool(re.search(Pattern, NewLine))):
-                            MatchPattern = Pattern
-                            break
-
-                    # Let's construct JSON output for Filebeat index (ELK 7.4.0)
-                    JSONToSend = (''
-                    '{'
-                    '\"agent\":{'
-                    '\"hostname\":\"' + LPARName + '\",'
-                    '\"id\":\"' + AgentID + '\",'
-                    '\"ephemeral_id\":\"' + EphemeralID + '\",'
-                    '\"type\":\"filebeat\",'
-                    '\"version\":\"' + ELKMonitoringVersion + '\"'
-                    '},'
-                    '\"log\":{'
-                    '\"file\":{'
-                    '\"path\":\"' + TargetFile + '\"'
-                    '},'
-                    '\"offset\":' + str(MatchLineOffset) + ','
-                    '\"pattern\":\"' + MatchPattern + '\"},'
+                    # Incrementing safety sleep before sending current message if matched
+                    # Maybe a line will comes out ?!
+                    if len(FinalLogLine) != 0:
+                        TailTimer = TailTimer + 1
                     
-                    '\"message\":\"' + re.sub('[\\\[\]\(\)\{\}"\b\t\n\a\r]', ' ', NewLine) + '\",'
-                    '\"input\":{'
-                    '\"type\":\"log\"'
-                    '},'
-                    '\"@timestamp\":\"' + SeqIdTimestamp + '\",'
-                    '\"ecs\":{'
-                    '\"version\":\"' + ECSVersion + '\"'
-                    '},'
-                    '\"service\":{'
-                    '\"type\":\"customfilebeat\"'
-                    '},'
-                    '\"host\":{'
-                    '\"frame\":\"' + LPARHost + '\",\"site\":\"' + HostingSite + '\",\"app\":\"' + LPARAppName+ '\",\"hostname\":\"' + LPARName + '\",'
-                    '\"os\":{'
-                    '\"kernel\":\"' + AIXVersion + '\",'
-                    '\"codename\":\"AIX\",'
-                    '\"name\":\"AIX\",'
-                    '\"family\":\"AIX\",'
-                    '\"version\":\"' + AIXVersion + '\",'
-                    '\"platform\":\"AIX\"'
-                    '},'
-                    '\"containerized\":false,'
-                    '\"name\":\"' + LPARName + '\",'
-                    '\"id\":\"' + LPARRndID + '\",'
-                    '\"architecture\":\"' + LPARArch + '\"'
-                    '},'
-                    '\"event\":{'
-                    '\"timezone\":\"+00:00\",'
-                    '\"module\":\"customfilebeat\",'
-                    '\"dataset\":\"custom.' + FilebeatConfigName + '\"'
-                    '}'
-                    '}'
-                    '')
-                    # Let's send JSON message to ELK Filebeat server
-                    SendToELK(JSONToSend, "log")
-                    # print('JSONToSend: ', JSONToSend)
+                    # Checking if something to send and if we have wait enough
+                    if TailTimer > 4:
+                        if Matched:
+                            # Removing \n at the end of the Message
+                            # FinalLogLine = re.sub('\n', '\\\n', FinalLogLine)
 
-        # When we reached that point, thread is dead by order
-        # print('thread ' + CurrentThread.name + ' is dead by order')
-        pass
-    except:
-        # Something happened to the thread, thread is dead by crash
-        # print('thread ' + CurrentThread.name + ' is dead by crash')
-        pass
+                            # Formatting message
+                            Message = re.sub('[\\\[\]\(\)\{\}"\b\t\a\r\n]', ' ', FinalLogLine)
+                            
+                            # Sending message
+                            CustomJSONToSend = (''
+                            ','
+                            '\"log\":{'
+                            '\"file\":{'
+                            '\"path\":\"' + TargetFile + '\"'
+                            '},'
+                            '\"offset\":' + str(MatchLineOffset) + ','
+                            '\"pattern\":\"' + PatternMatch + '\"},'
+                            '\"message\":\"' + Message + '\",'
+                            '\"input\":{'
+                            '\"type\":\"log\"'
+                            '},'
+                            '\"service\":{'
+                            '\"name\":\"customfilebeat\"'
+                            '},'
+                            '\"event\":{'
+                            '\"timezone\":\"+00:00\",'
+                            '\"module\":\"customfilebeat\",'
+                            '\"dataset\":\"custom.' + FilebeatConfigName + '\"'
+                            '}'
+                            '')
+                            
+                            # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
+                            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSONFilebeat + CustomJSONToSend + '}'
+                            
+                            # Let's send JSON message to Elastic, Filebeat or Logstash server
+                            if Output == 'Metricbeat':
+                                SendJSON(JSONToSend)
+                            elif Output == 'Logstash':
+                                SendJSON(JSONToSend, 'Logstash')
+                            else:
+                                SendJSON(JSONToSend, 'Filebeat')
+                            # print('JSONToSend: ', JSONToSend)
+                            
+                        # Reseting vars for next log line
+                        SeqIdTimestamp = ''
+                        LogLineStart = False
+                        Matched = False
+                        FinalLogLine = ''
+                        TailTimer = 0
+
+                else:
+                    # New line has been written, let's store datetime if not already
+                    if (len(SeqIdTimestamp) == 0):
+                        SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+                    
+                    # Checking if log line start
+                    if (bool(re.search(MultilineSeparator, NewLine))) and (LogLineStart == False):
+                        # Setting var to true
+                        LogLineStart = True
+
+                        # Storing line content
+                        FinalLogLine = str(NewLine)
+                        
+                        # Checking if line content the pattern
+                        if (bool(re.search(PatternMatch, NewLine)) and Matched == False):
+                            Matched = True
+                            
+                            # Getting the current line of the file
+                            MatchLineOffset = OpenedTargetFile.tell()
+                        
+                    elif (bool(re.search(MultilineSeparator, NewLine))) and (LogLineStart == True):
+                        # New line detected, sending the message  if matched is detected
+                        if Matched:
+                            # Removing \n at the end of the Message
+                            # FinalLogLine = re.sub('\n', '\\\n', FinalLogLine)
+                            
+                            # Formatting message
+                            Message = re.sub('[\\\[\]\(\)\{\}"\b\t\a\r\n]', ' ', FinalLogLine)  
+                            
+                            # Sending message
+                            CustomJSONToSend = (''
+                            ','
+                            '\"log\":{'
+                            '\"file\":{'
+                            '\"path\":\"' + TargetFile + '\"'
+                            '},'
+                            '\"offset\":' + str(MatchLineOffset) + ','
+                            '\"pattern\":\"' + PatternMatch + '\"},'
+                            '\"message\":\"' + Message + '\",'
+                            '\"input\":{'
+                            '\"type\":\"log\"'
+                            '},'
+                            '\"service\":{'
+                            '\"name\":\"customfilebeat\"'
+                            '},'
+                            '\"event\":{'
+                            '\"timezone\":\"+00:00\",'
+                            '\"module\":\"customfilebeat\",'
+                            '\"dataset\":\"custom.' + FilebeatConfigName + '\"'
+                            '}'
+                            '')
+                            
+                            # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
+                            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSONFilebeat + CustomJSONToSend + '}'
+                            
+                            # Let's send JSON message to Elastic, Filebeat or Logstash server
+                            if Output == 'Metricbeat':
+                                SendJSON(JSONToSend)
+                            elif Output == 'Logstash':
+                                SendJSON(JSONToSend, 'Logstash')
+                            else:
+                                SendJSON(JSONToSend, 'Filebeat')
+                            # print('JSONToSend: ', JSONToSend)
+                        
+                        # Reseting vars for next log line
+                        SeqIdTimestamp = ''
+                        LogLineStart = False
+                        Matched = False
+                        FinalLogLine = ''
+                        TailTimer = 0
+
+                        # Fetching file to the previous position
+                        OpenedTargetFile.seek(TargetFileCurrentPosArray[FilebeatConfigName])
+                        
+                        # Going to the next loop execution
+                        continue
+
+                    else:    
+                        # This line is the continuation of the previous one, let's add it and loop
+                        FinalLogLine = FinalLogLine + str(NewLine)
+                        
+                        # Checking if line content the pattern
+                        if (bool(re.search(PatternMatch, NewLine)) and Matched == False):
+                            Matched = True
+                            
+                            # Getting the current line of the file
+                            MatchLineOffset = OpenedTargetFile.tell()
+  
+                    # Going to sleep 0,1 sec to wait for next line for CPU reasons
+                    time.sleep(0.1)   
+
+            # When we reached that point, thread is dead by order
+            # print('thread ' + CurrentThread.name + ' is dead by order')
+            pass
+        except:
+            # Something happened to the thread, thread is dead by crash
+            print('thread ' + CurrentThread.name + ' is dead by crash')
+            # traceback.print_exc()
+            pass
+    else:
+        # No Multi-line mode
+        
+        # Going to make all work into try/catch to avoid exception and daemon crash
+        # if something unexpected happen to the TargetFile
+        try:
+            # Start looping indefintly until TailStateArray[ThreadName] is different then True
+            # It give control on this sub-thread from main thread to stop/clean it when necessary
+            while (True and TailStateArray[FilebeatConfigName]):
+                # Storing the current TargetFile's "last line" position
+                TargetFileCurrentPosArray[FilebeatConfigName] = OpenedTargetFile.tell()
+                # Gathering new lines if any
+                NewLine = OpenedTargetFile.readline()
+
+                # Checking if there are new lines happened to the TargetFile
+                if not NewLine:
+                    # No new line detected
+                    # Then we set file position to the previous recoreded one
+                    # to check any new lines in the next loop execution
+                    OpenedTargetFile.seek(TargetFileCurrentPosArray[FilebeatConfigName])
+                    # Going to sleep 1 sec to save CPU
+                    time.sleep(1)
+
+                else:
+                    # Removing \n at the end of thr readline() output
+                    NewLine = re.sub('\n$', '', NewLine)
+                    # New line has been written, let's store datetime and check for patterns
+                    SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+                    
+                    # We check if pattern is detected
+                    if bool(re.search(PatternMatch, NewLine)):
+                        
+                        # Getting the current line of the file
+                        MatchLineOffset = OpenedTargetFile.tell()
+                        
+                        CustomJSONToSend = (''
+                        ','
+                        '\"log\":{'
+                        '\"file\":{'
+                        '\"path\":\"' + TargetFile + '\"'
+                        '},'
+                        '\"offset\":' + str(MatchLineOffset) + ','
+                        '\"pattern\":\"' + PatternMatch + '\"},'
+                        '\"message\":\"' + re.sub('[\\\[\]\(\)\{\}"\b\t\n\a\r]', ' ', NewLine) + '\",'
+                        '\"input\":{'
+                        '\"type\":\"log\"'
+                        '},'
+                        '\"service\":{'
+                        '\"name\":\"customfilebeat\"'
+                        '},'
+                        '\"event\":{'
+                        '\"timezone\":\"+00:00\",'
+                        '\"module\":\"customfilebeat\",'
+                        '\"dataset\":\"custom.' + FilebeatConfigName + '\"'
+                        '}'
+                        '')
+                        
+                        # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
+                        JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSONFilebeat + CustomJSONToSend + '}'
+                        
+                        # Let's send JSON message to Elastic, Filebeat or Logstash server
+                        if Output == 'Metricbeat':
+                            SendJSON(JSONToSend)
+                        elif Output == 'Logstash':
+                            SendJSON(JSONToSend, 'Logstash')
+                        else:
+                            SendJSON(JSONToSend, 'Filebeat')
+                            
+                        # print('JSONToSend: ', JSONToSend)
+
+            # When we reached that point, thread is dead by order
+            # print('thread ' + CurrentThread.name + ' is dead by order')
+            pass
+        except:
+            # Something happened to the thread, thread is dead by crash
+            print('thread ' + CurrentThread.name + ' is dead by crash')
+            # traceback.print_exc()
+            pass
     pass
 
-def CustomMetricExec(OSScript, ItemName, ComparisonTimer):
+def CustomMetricExec(OSScript, ItemName, ComparisonTimer, Output):
     """ This function analyse Disks activity and send metrics to ElasticSearch server
 
         Please refer to README.md
@@ -1859,8 +2691,13 @@ def CustomMetricExec(OSScript, ItemName, ComparisonTimer):
             # Adding dynamic "ELK Formating" JSON values into final JSON message
             JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
             
-            # Let's send JSON message to ELK servers
-            SendToELK(JSONToSend)
+            # Let's send JSON message to Elastic, Filebeat or Logstash server
+            if Output == 'Filebeat':
+                SendJSON(JSONToSend, 'Filebeat')
+            elif Output == 'Logstash':
+                SendJSON(JSONToSend, 'Logstash')
+            else:
+                SendJSON(JSONToSend)
             # print('\JSONToSend\n', JSONToSend, '\n')
             pass
 
@@ -1923,7 +2760,7 @@ def PingPlotter(ComparisonTimer):
             JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
             
             # Let's send JSON message to ELK servers
-            SendToELK(JSONToSend)
+            SendJSON(JSONToSend)
             
             # print('\JSONToSend\n', JSONToSend, '\n')
             
@@ -1948,10 +2785,79 @@ def PingPlotter(ComparisonTimer):
             JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
             
             # Let's send JSON message to ELK servers
-            SendToELK(JSONToSend)
+            SendJSON(JSONToSend)
             
             # print('\JSONToSend\n', JSONToSend, '\n')
             pass
+
+def ErrptLog(ComparisonTimer):
+    """ This function detects new Errorlogs and send them to ElasticSearch server
+
+        Please refer to README.md
+    
+        TODO: Describe the function, all vars and its content
+    """
+    global LastErrpt
+    
+    # Checking if value is initialized with try/catch
+    try:
+        # Gathering last errorlog line
+        CurrErrpt = subprocess.Popen("errpt -a | grep \"Sequence Number\" | awk '{print $NF}'", shell=True, stdout=subprocess.PIPE).stdout
+        CurrErrpt = CurrErrpt.read().decode().split('\n')
+
+        # Checking if last errlog entrie is the same or new
+        if str(CurrErrpt[0]) not in str(LastErrpt):
+            # New log detected, gathering its id in list
+            for i in range(0, len(CurrErrpt)): 
+                if str(CurrErrpt[i]) in str(LastErrpt): 
+                    CurrErrptID = i
+                    break
+                    
+            # Sending all required error log entries in correct order
+            for i in reversed(range(0, CurrErrptID)):
+                ErrorLogMessageCmd = 'errpt -l ' + str(CurrErrpt[i]) + ' | tail -n +2'
+                ErrorLogMessage = subprocess.Popen(ErrorLogMessageCmd, shell=True, stdout=subprocess.PIPE).stdout
+                ErrorLogMessage = ErrorLogMessage.read().decode()
+                
+                # Generating current ELK timestamp for JSON message
+                SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+                
+                # Custom message
+                CustomJSONToSend = (''
+                '\"log\":{'
+                '\"file\":{'
+                '\"path\":\"AIX ERRORLOG\"'
+                '},'
+                '\"offset\":' + str(CurrErrptID) + ','
+                '\"pattern\":\"AIX ERRORLOG\"},'
+                '\"message\":\"' + re.sub('[\\\[\]\(\)\{\}"\b\t\n\a\r]', ' ', str(ErrorLogMessage)) + '\",'
+                '\"input\":{'
+                '\"type\":\"log\"'
+                '},'
+                '\"service\":{'
+                '\"name\":\"aixerrorlog\"'
+                '},'
+                '\"event\":{'
+                '\"timezone\":\"+00:00\",'
+                '\"module\":\"aixerrorlog\",'
+                '\"dataset\":\"custom.aixerrorlog\"'
+                '}'
+                '')
+                
+                # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
+                JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSONFilebeat + ',' + CustomJSONToSend + '}'
+                
+                # Let's send JSON message to ELK Filebeat server
+                SendJSON(JSONToSend, 'Filebeat')
+                # print('JSONToSend: ', JSONToSend)
+                
+            # Setting last errorlog to the first occurence of the list
+            LastErrpt = CurrErrpt[0]
+            
+    except:
+        # First execution, gathering last errorlog line and setting LastErrpt
+        LastErrpt = subprocess.Popen("errpt -a | grep \"Sequence Number\" | awk '{print $NF}' | head -1", shell=True, stdout=subprocess.PIPE).stdout
+        LastErrpt = LastErrpt.read().decode()
 
 def SystemCoreAndCpu(ComparisonTimer):
     """ This function analyse CPU activity and send metrics to ElasticSearch server
@@ -1961,6 +2867,7 @@ def SystemCoreAndCpu(ComparisonTimer):
         TODO: Describe the function, all vars and its content
     """
     global NMONSeq
+    global LPARCPUMode
     
     # Generating current ELK timestamp for JSON message
     SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
@@ -2020,7 +2927,7 @@ def SystemCoreAndCpu(ComparisonTimer):
     CPUSystemPCTNorm = float(SystemCoreAndCpuCmd[16]) / 100
     CPUIOWaitPCTNorm = str(float(SystemCoreAndCpuCmd[18]) / 100)
     CPUTotalNorm = CPUUserPCTNorm + CPUSystemPCTNorm
-    CPUTotalNorm = str(CPUTotalNorm)
+    CPUTotalNorm = str(round(CPUTotalNorm, 2))
     CPUUserPCTNorm = str(CPUUserPCTNorm)
     CPUSystemPCTNorm = str(CPUSystemPCTNorm)
 
@@ -2085,23 +2992,23 @@ def SystemCoreAndCpu(ComparisonTimer):
     JSONToSendValues = (''
     '\"system\":{'
     '\"core\":{'
-    '\"softirq\":{'
-    '\"pct\":' + CPUSoftIRQPCTNorm + '},'
-    '\"steal\":{'
-    '\"pct\":' + CPUStealPCTNorm + '},'
-    '\"idle\":{'
-    '\"pct\":' + CPUIdlePCTNorm + '},'
-    '\"system\":{'
-    '\"pct\":' + CPUSystemPCTNorm + '},'
-    '\"irq\":{'
-    '\"pct\":' + CPUIRQPCTNorm + '},'
-    '\"nice\":{'
-    '\"pct\":' + CPUNicePCTNorm + '},'
+    '\"softirq\":{\"norm\": {'
+    '\"pct\":' + CPUSoftIRQPCTNorm + '}},'
+    '\"steal\":{\"norm\": {'
+    '\"pct\":' + CPUStealPCTNorm + '}},'
+    '\"idle\":{\"norm\": {'
+    '\"pct\":' + CPUIdlePCTNorm + '}},'
+    '\"system\":{\"norm\": {'
+    '\"pct\":' + CPUSystemPCTNorm + '}},'
+    '\"irq\":{\"norm\": {'
+    '\"pct\":' + CPUIRQPCTNorm + '}},'
+    '\"nice\":{\"norm\": {'
+    '\"pct\":' + CPUNicePCTNorm + '}},'
     '\"id\":1,'
-    '\"user\":{'
-    '\"pct\":' + CPUUserPCTNorm + '},'
-    '\"iowait\":{'
-    '\"pct\":' + CPUIOWaitPCTNorm + '}}}')   
+    '\"user\":{\"norm\": {'
+    '\"pct\":' + CPUUserPCTNorm + '}},'
+    '\"iowait\":{\"norm\": {'
+    '\"pct\":' + CPUIOWaitPCTNorm + '}}}}')   
    
     # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
     JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
@@ -2116,12 +3023,14 @@ def SystemCoreAndCpu(ComparisonTimer):
     JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
     
     # Let's send JSON message to ELK servers
-    SendToELK(JSONToSend)
+    SendJSON(JSONToSend)
     # print('\JSONToSend\n', JSONToSend, '\n')
        
     # Let's construct JSON output for SystemCPU(ELK 7.5.0)
     JSONToSendValues = (''
-    '\"system\":{\"cpu\":{\"cores\":' + NumProcString + ','
+    # For now, replacing the number of threads by the number of VCPU because of Linux metricbeat uniformization
+    # '\"system\":{\"cpu\":{\"cores\":' + NumProcString + ','
+    '\"system\":{\"cpu\":{\"cores\":' + VCPUAlloc + ','
     '\"custom\":{\"cpuphysusage\":' + CPUPhysc + ','
     '\"cpuentusagepct\":' + CPUEntcPCT + ','
     '\"onlinevcpu\":' + CurrOnlineVCPU + ','
@@ -2145,15 +3054,15 @@ def SystemCoreAndCpu(ComparisonTimer):
         
     # Then, adding the rest of the metrics
     JSONToSendValues = JSONToSendValues + ('},'
-    '\"steal\":{\"pct\":' + CPUStealPCTNorm + '},'
-    '\"idle\":{\"pct\":' + CPUIdlePCTNorm + '},'
-    '\"nice\":{\"pct\":' + CPUNicePCTNorm + '},'
-    '\"softirq\":{\"pct\":' + CPUSoftIRQPCTNorm + '},'
-    '\"system\":{\"pct\":' + CPUSystemPCTNorm + '},'
-    '\"iowait\":{\"pct\":' + CPUIOWaitPCTNorm + '},'
-    '\"total\":{\"pct\":' + CPUTotalNorm + '},'
-    '\"user\":{\"pct\":' + CPUUserPCTNorm + '},'
-    '\"irq\":{\"pct\":' + CPUIRQPCTNorm + '}'
+    '\"steal\":{\"norm\": {\"pct\":' + CPUStealPCTNorm + '}},'
+    '\"idle\":{\"norm\": {\"pct\":' + CPUIdlePCTNorm + '}},'
+    '\"nice\":{\"norm\": {\"pct\":' + CPUNicePCTNorm + '}},'
+    '\"softirq\":{\"norm\": {\"pct\":' + CPUSoftIRQPCTNorm + '}},'
+    '\"system\":{\"norm\": {\"pct\":' + CPUSystemPCTNorm + '}},'
+    '\"iowait\":{\"norm\": {\"pct\":' + CPUIOWaitPCTNorm + '}},'
+    '\"total\":{\"norm\": {\"pct\":' + CPUTotalNorm + '}},'
+    '\"user\":{\"norm\": {\"pct\":' + CPUUserPCTNorm + '}},'
+    '\"irq\":{\"norm\": {\"pct\":' + CPUIRQPCTNorm + '}}'
     '}}')
    
     # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
@@ -2169,7 +3078,7 @@ def SystemCoreAndCpu(ComparisonTimer):
     JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
     
     # Let's send JSON message to ELK servers
-    SendToELK(JSONToSend)
+    SendJSON(JSONToSend)
     # print('\JSONToSend\n', JSONToSend, '\n')
     pass
 
@@ -2261,7 +3170,7 @@ def SystemFc(ComparisonTimer):
             JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
             
             # Let's send JSON message to ELK servers
-            SendToELK(JSONToSend)
+            SendJSON(JSONToSend)
             # print('\JSONToSend\n', JSONToSend, '\n')
             pass
 
@@ -2335,7 +3244,7 @@ def SystemNetwork(ComparisonTimer):
             JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
             
             # Let's send JSON message to ELK servers
-            SendToELK(JSONToSend)
+            SendJSON(JSONToSend)
             # print('\JSONToSend\n', JSONToSend, '\n')
             pass
  
@@ -2399,7 +3308,7 @@ def SystemLoad(ComparisonTimer):
     JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
     
     # Let's send JSON message to ELK servers
-    SendToELK(JSONToSend)
+    SendJSON(JSONToSend)
     # print('\JSONToSend\n', JSONToSend, '\n')
     pass
 
@@ -2442,6 +3351,8 @@ def SystemMemory(ComparisonTimer):
     # Custom metrics
     VirtualMemUsed = int(MemoryLine[5]) * 1024
     VirtualMemUsedPCT = VirtualMemUsed / RealMemTotal
+    VirtualMemFreePCT = 1 - VirtualMemUsedPCT
+    VirtualMemFree = VirtualMemUsedPCT * RealMemTotal
     CacheMemUsed = RealMemUsed - VirtualMemUsed
     CacheMemUsedPCT = CacheMemUsed / RealMemTotal
 
@@ -2461,6 +3372,7 @@ def SystemMemory(ComparisonTimer):
     RealMemUsedPCT = str(RealMemUsedPCT)
     VirtualMemUsed = str(VirtualMemUsed)
     VirtualMemUsedPCT = str(VirtualMemUsedPCT)
+    VirtualMemFree = str(VirtualMemFree)
     CacheMemUsed = str(CacheMemUsed)
     CacheMemUsedPCT = str(CacheMemUsedPCT)
     TotalSwapBytes = str(TotalSwapBytes)
@@ -2537,10 +3449,10 @@ def SystemMemory(ComparisonTimer):
     '\"pct\":' + RealMemUsedPCT + '},'
     '\"free\":' + RealMemFree + ','
     '\"actual\":{'
-    '\"free\":' + RealMemFree + ','
+    '\"free\":' + VirtualMemFree + ','
     '\"used\":{'
-    '\"pct\":' + RealMemUsedPCT + ','
-    '\"bytes\":' + RealMemUsed + '}},'
+    '\"pct\":' + VirtualMemUsedPCT + ','
+    '\"bytes\":' + VirtualMemUsed + '}},'
     '\"swap\":{'
     '\"in\":{'
     '\"pages\":' + swappagein + '},'
@@ -2582,7 +3494,7 @@ def SystemMemory(ComparisonTimer):
     JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
     
     # Let's send JSON message to ELK servers
-    SendToELK(JSONToSend)
+    SendJSON(JSONToSend)
     # print('\JSONToSend\n', JSONToSend, '\n')
     pass
 
@@ -2691,7 +3603,7 @@ def SystemProcessSummary(ComparisonTimer):
     JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
     
     # Let's send JSON message to ELK servers
-    SendToELK(JSONToSend)
+    SendJSON(JSONToSend)
     # print('\JSONToSend\n', JSONToSend, '\n')
     pass
 
@@ -2914,7 +3826,7 @@ def SystemDiskIO(ComparisonTimer):
         JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
         
         # Let's send JSON message to ELK servers
-        SendToELK(JSONToSend)
+        SendJSON(JSONToSend)
         # print('\nJSONToSend\n', JSONToSend, '\n')
         pass
 
@@ -3013,7 +3925,7 @@ def SystemFilesystemAndFstat(ComparisonTimer):
             JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
             
             # Let's send JSON message to ELK servers
-            SendToELK(JSONToSend)
+            SendJSON(JSONToSend)
             # print('\JSONToSend\n', JSONToSend, '\n')
 
     # Convert vars into strings
@@ -3044,7 +3956,7 @@ def SystemFilesystemAndFstat(ComparisonTimer):
     JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
     
     # Let's send JSON message to ELK servers
-    SendToELK(JSONToSend)
+    SendJSON(JSONToSend)
     # print('\JSONToSend\n', JSONToSend, '\n')
     pass
 
@@ -3065,59 +3977,64 @@ def SystemHPMStat(ComparisonTimer):
     # Defining which values we want to take from output for General group
     # If some fields are added or remove, all the code has to be reviewed as positions will change...
     
-    # Checking Power Hardware to get correct counters (all counters are not available on all architecture...)
-    if LPARArch == "PowerPC_POWER8":
-        # For Power 8
-        HPMStatInclude = 'Cycles per instruction|Instructions per cycles|ITLB miss rate per inst|L2 Instruction Miss Rate|L3 Instruction Miss Rate'
+    # We can get several "HPM Counter reserved" errors, then hidding them
+    try:
+        # Checking Power Hardware to get correct counters (all counters are not available on all architecture...)
+        if LPARArch == "PowerPC_POWER8":
+            # For Power 8
+            HPMStatInclude = 'Cycles per instruction|Instructions per cycles|ITLB miss rate per inst|L2 Instruction Miss Rate|L3 Instruction Miss Rate'
 
-        # Gathering data from OS command
-        SystemHPMGrpGeneralCmd = 'hpmstat -m General:uk | egrep -w "' + HPMStatInclude + '"'
-        
-        SystemHPMGrpGeneral = subprocess.Popen(SystemHPMGrpGeneralCmd, shell=True, stdout=subprocess.PIPE).stdout
-        SystemHPMGrpGeneral = SystemHPMGrpGeneral.read().decode().split('\n')
-        
-        CyclePerInst = SystemHPMGrpGeneral[0].split()[-1]
-        InstPerCycle = SystemHPMGrpGeneral[1].split()[-1]
-        L2MissRate = SystemHPMGrpGeneral[2].split()[-2]
-        L3MissRate = SystemHPMGrpGeneral[3].split()[-2]
-        ITLBMissRate = SystemHPMGrpGeneral[4].split()[-2]
-    
-        FinalString = '{\"cpugeneral\":{\"cycleperinst\":' + CyclePerInst + ',\"instpercycle\":' + InstPerCycle + ',\"l2missrate\":' + L2MissRate + ',\"l3missrate\":' + L3MissRate + ',\"itlbmissrate\":' + ITLBMissRate + '},'
-    
-    elif LPARArch == "PowerPC_POWER9":
-        # For Power 9
-        HPMStatInclude = 'Run cycles per run instruction|% ITLB miss rate per inst|L2 demand Load Miss Rate |L3 demand Load Miss Rate '
-        
-        # Gathering data from OS command
-        SystemHPMGrpGeneralCmd = 'hpmstat -m General:uk | egrep -w "' + HPMStatInclude + '"'
-        
-        SystemHPMGrpGeneral = subprocess.Popen(SystemHPMGrpGeneralCmd, shell=True, stdout=subprocess.PIPE).stdout
-        SystemHPMGrpGeneral = SystemHPMGrpGeneral.read().decode().split('\n')
-        
-        CyclePerInst = SystemHPMGrpGeneral[0].split()[-1]
-        L2MissRate = SystemHPMGrpGeneral[1].split()[-2]
-        L3MissRate = SystemHPMGrpGeneral[2].split()[-2]
-        ITLBMissRate = SystemHPMGrpGeneral[3].split()[-2]
-    
-        FinalString = '{\"cpugeneral\":{\"cycleperinst\":' + CyclePerInst + ',\"l2missrate\":' + L2MissRate + ',\"l3missrate\":' + L3MissRate + ',\"itlbmissrate\":' + ITLBMissRate + '},'
-        
-    elif LPARArch == "PowerPC_POWER7":
-        # For Power 7
-        HPMStatInclude = 'Cycles per instruction|Instructions per cycles|L2 Instruction Miss Rate |L3 Instruction Miss Rate ' 
-        
-        # Gathering data from OS command
-        SystemHPMGrpGeneralCmd = 'hpmstat -m General:uk | egrep -w "' + HPMStatInclude + '"'
+            # Gathering data from OS command
+            SystemHPMGrpGeneralCmd = 'hpmstat -m General:uk | egrep -w "' + HPMStatInclude + '"'
+            
+            SystemHPMGrpGeneral = subprocess.Popen(SystemHPMGrpGeneralCmd, shell=True, stdout=subprocess.PIPE).stdout
+            SystemHPMGrpGeneral = SystemHPMGrpGeneral.read().decode().split('\n')
+            
+            CyclePerInst = SystemHPMGrpGeneral[0].split()[-1]
+            InstPerCycle = SystemHPMGrpGeneral[1].split()[-1]
+            L2MissRate = SystemHPMGrpGeneral[2].split()[-2]
+            L3MissRate = SystemHPMGrpGeneral[3].split()[-2]
+            ITLBMissRate = SystemHPMGrpGeneral[4].split()[-2]
 
-        SystemHPMGrpGeneral = subprocess.Popen(SystemHPMGrpGeneralCmd, shell=True, stdout=subprocess.PIPE).stdout
-        SystemHPMGrpGeneral = SystemHPMGrpGeneral.read().decode().split('\n')
+            FinalString = '{\"cpugeneral\":{\"cycleperinst\":' + CyclePerInst + ',\"instpercycle\":' + InstPerCycle + ',\"l2missrate\":' + L2MissRate + ',\"l3missrate\":' + L3MissRate + ',\"itlbmissrate\":' + ITLBMissRate + '},'
 
-        CyclePerInst = SystemHPMGrpGeneral[0].split()[-2]
-        InstPerCycle = SystemHPMGrpGeneral[1].split()[-2]
-        L2MissRate = SystemHPMGrpGeneral[2].split()[-1]
-        L3MissRate = SystemHPMGrpGeneral[3].split()[-1]
+        elif LPARArch == "PowerPC_POWER9":
+            # For Power 9
+            HPMStatInclude = 'Run cycles per run instruction|% ITLB miss rate per inst|L2 demand Load Miss Rate |L3 demand Load Miss Rate '
+            
+            # Gathering data from OS command
+            SystemHPMGrpGeneralCmd = 'hpmstat -m General:uk | egrep -w "' + HPMStatInclude + '"'
+            
+            SystemHPMGrpGeneral = subprocess.Popen(SystemHPMGrpGeneralCmd, shell=True, stdout=subprocess.PIPE).stdout
+            SystemHPMGrpGeneral = SystemHPMGrpGeneral.read().decode().split('\n')
+            
+            CyclePerInst = SystemHPMGrpGeneral[0].split()[-1]
+            L2MissRate = SystemHPMGrpGeneral[1].split()[-2]
+            L3MissRate = SystemHPMGrpGeneral[2].split()[-2]
+            ITLBMissRate = SystemHPMGrpGeneral[3].split()[-2]
 
-        FinalString = '{\"cpugeneral\":{\"cycleperinst\":' + CyclePerInst + ',\"instpercycle\":' + InstPerCycle + ',\"l2missrate\":' + L2MissRate + ',\"l3missrate\":' + L3MissRate + '},'
-    
+            FinalString = '{\"cpugeneral\":{\"cycleperinst\":' + CyclePerInst + ',\"l2missrate\":' + L2MissRate + ',\"l3missrate\":' + L3MissRate + ',\"itlbmissrate\":' + ITLBMissRate + '},'
+            
+        elif LPARArch == "PowerPC_POWER7":
+            # For Power 7
+            HPMStatInclude = 'Cycles per instruction|Instructions per cycles|L2 Instruction Miss Rate |L3 Instruction Miss Rate ' 
+            
+            # Gathering data from OS command
+            SystemHPMGrpGeneralCmd = 'hpmstat -m General:uk | egrep -w "' + HPMStatInclude + '"'
+
+            SystemHPMGrpGeneral = subprocess.Popen(SystemHPMGrpGeneralCmd, shell=True, stdout=subprocess.PIPE).stdout
+            SystemHPMGrpGeneral = SystemHPMGrpGeneral.read().decode().split('\n')
+
+            CyclePerInst = SystemHPMGrpGeneral[0].split()[-2]
+            InstPerCycle = SystemHPMGrpGeneral[1].split()[-2]
+            L2MissRate = SystemHPMGrpGeneral[2].split()[-1]
+            L3MissRate = SystemHPMGrpGeneral[3].split()[-1]
+
+            FinalString = '{\"cpugeneral\":{\"cycleperinst\":' + CyclePerInst + ',\"instpercycle\":' + InstPerCycle + ',\"l2missrate\":' + L2MissRate + ',\"l3missrate\":' + L3MissRate + '},'
+    except:
+        # Error detected, exiting function wand wait for next schedule
+        # traceback.print_exc()
+        return
     
     # No SMT or Cache reload counters exist for Power 9 (Need more investigation maybe...)
     
@@ -3186,7 +4103,7 @@ def SystemHPMStat(ComparisonTimer):
         
     # Gathering data from OS command
     SystemHPMMpStat = subprocess.Popen("mpstat -d 1 1 | grep ALL", shell=True, stdout=subprocess.PIPE).stdout
-    SystemHPMMpStat = SystemHPMMpStat.read().decode().split()
+    SystemHPMMpStat = SystemHPMMpStat.read().decode().split() 
     
     S0rd = str(float(SystemHPMMpStat[8]) / 100)
     S1rd = str(float(SystemHPMMpStat[9]) / 100)
@@ -3194,9 +4111,15 @@ def SystemHPMStat(ComparisonTimer):
     S3rd = str(float(SystemHPMMpStat[11]) / 100)
     S4rd = str(float(SystemHPMMpStat[12]) / 100)
     S5rd = str(float(SystemHPMMpStat[13]) / 100)
-    S3hrd = str(float(SystemHPMMpStat[16]) / 100)
-    S4hrd = str(float(SystemHPMMpStat[17]) / 100)
-    S5hrd = str(float(SystemHPMMpStat[18]) / 100)
+    # Following value placement depends of CPU mode
+    if "Dedicated" in LPARCPUMode:
+        S3hrd = str(float(SystemHPMMpStat[14]) / 100)
+        S4hrd = str(float(SystemHPMMpStat[15]) / 100)
+        S5hrd = str(float(SystemHPMMpStat[16]) / 100)
+    else:
+        S3hrd = str(float(SystemHPMMpStat[16]) / 100)
+        S4hrd = str(float(SystemHPMMpStat[17]) / 100)
+        S5hrd = str(float(SystemHPMMpStat[18]) / 100)
 
     FinalString = str(FinalString) + '\"cpuaffinity\":{\"S0rd\":' + S0rd + ',\"S1rd\":' + S1rd + ',\"S2rd\":' + S2rd + ',\"S3rd\":' + S3rd + ',\"S4rd\":' + S4rd + ',\"S5rd\":' + S5rd + ',\"S3hrd\":' + S3hrd + ',\"S4hrd\":' + S4hrd + ',\"S5hrd\":' + S5hrd + '}}'
       
@@ -3217,7 +4140,7 @@ def SystemHPMStat(ComparisonTimer):
     JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
     
     # Let's send JSON message to ELK servers
-    SendToELK(JSONToSend)
+    SendJSON(JSONToSend)
     
     # print('\JSONToSend\n', JSONToSend, '\n')
     pass
@@ -3288,7 +4211,7 @@ def SystemHypervisor(ComparisonTimer):
     JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
     
     # Let's send JSON message to ELK servers
-    SendToELK(JSONToSend)
+    SendJSON(JSONToSend)
     # print('\JSONToSend\n', JSONToSend, '\n')
     pass
 
@@ -3333,35 +4256,36 @@ def SystemProcess(ComparisonTimer):
             # Handling defunct/exiting/idle process cases
             ExcludedProcesses = ['<defunct>', '<exiting>', '<idle>']
             if any(ExcludedProcess in ProcessName for ExcludedProcess in ExcludedProcesses):
-                # If it is a defunct process
-                ProcessMemorySize = 0
-                ProcessMemoryRssBytes = 0
-                ProcessMemoryRssPCT = 0
-                ProcessUsername = 0
-                ProcessCpuTotalValue = 0
-                ProcessCpuTotalPCTNorm = 0
-                ProcessCpuTotalPCT = 0
-                ProcessFDPath = 0
-                ProcessFdOpen = 0
-                ProcessCpuStartTime = 0
-                ProcessCmdline = 0
-                ProcessMemoryShare = 0
-                ProcessFdOpenlimitSoft = 0
-                ProcessFdOpenlimitHard = 0
-                ProcessCwd = 0
-                ProcessExecutable = 0
-                FinalCmdString = str(0)
-                ProcessPpid = CPUProcessLine = 0
-                ProcessPgid = CPUProcessLine = 0
+                # If it is a defunct process, maybe we will makesomething with that...
+                # ProcessMemorySize = 0
+                # ProcessMemoryRssBytes = 0
+                # ProcessMemoryRssPCT = 0
+                # ProcessUsername = 0
+                # ProcessCpuTotalValue = 0
+                # ProcessCpuTotalPCTNorm = 0
+                # ProcessCpuTotalPCT = 0
+                # ProcessFDPath = 0
+                # ProcessFdOpen = 0
+                # ProcessCpuStartTime = 0
+                # ProcessCmdline = 0
+                # ProcessMemoryShare = 0
+                # ProcessFdOpenlimitSoft = 0
+                # ProcessFdOpenlimitHard = 0
+                # ProcessCwd = 0
+                # ProcessExecutable = 0
+                # FinalCmdString = str(0)
+                # ProcessPpid = CPUProcessLine = 0
+                # ProcessPgid = CPUProcessLine = 0
+                pass
 
             else:
                 # For other processes
                 ProcessMemorySize = CPUProcessLine[5]
                 # Converting KB in B
-                ProcessMemorySize = ProcessMemorySize + '000'
+                ProcessMemorySize = int(ProcessMemorySize) * 1024
                 ProcessMemoryRssBytes = CPUProcessLine[6]
                 # Converting KB in B
-                ProcessMemoryRssBytes = ProcessMemoryRssBytes + '000'
+                ProcessMemoryRssBytes = int(ProcessMemoryRssBytes) * 1024
                 ProcessMemoryRssPCT = CPUProcessLine[7]
                 # Formating pct to ELK format
                 ProcessMemoryRssPCT = float(ProcessMemoryRssPCT) / 100
@@ -3458,7 +4382,6 @@ def SystemProcess(ComparisonTimer):
 
                 # COST -- The following is very costly, need to know if really necessary
                 # We can change and force the limit to 0 anyway, saving CPU
-                # If problem on that, we should see saturation on graphs...
                 # ProcessFdOpenlimitSoft=0
                 # ProcessFdOpenlimitHard=0
 
@@ -3467,7 +4390,7 @@ def SystemProcess(ComparisonTimer):
                 ProcessFdOpenlimitSoft = subprocess.Popen(ProcessFdOpenlimitSoftCmd, shell=True, stdout=subprocess.PIPE).stdout
                 ProcessFdOpenlimitSoft = ProcessFdOpenlimitSoft.read().decode().split('\n')
                 ProcessFdOpenlimitSoft = ProcessFdOpenlimitSoft[0]
-
+                
                 # Setting limit to zero if unlimited
                 if (ProcessFdOpenlimitSoft == 'unlimited') or (ProcessFdOpenlimitSoft == '-1'):
                     # We set limit to 0 as unlimited
@@ -3478,7 +4401,6 @@ def SystemProcess(ComparisonTimer):
                 ProcessFdOpenlimitHard = subprocess.Popen(ProcessFdOpenlimitHardCmd, shell=True, stdout=subprocess.PIPE).stdout
                 ProcessFdOpenlimitHard = ProcessFdOpenlimitHard.read().decode().split('\n')
                 ProcessFdOpenlimitHard = ProcessFdOpenlimitHard[0]
-
                 # Checking if hard limits are set
                 if ProcessFdOpenlimitHard == "":
                     ProcessFdOpenlimitHard = ProcessFdOpenlimitSoft
@@ -3505,82 +4427,82 @@ def SystemProcess(ComparisonTimer):
                 ProcessExecutableSplitedLen = len(ProcessExecutableSplited) - 1
                 ProcessExecutable = ProcessExecutableSplited[ProcessExecutableSplitedLen]
 
-            # Convert vars into strings
-            CPUProcessLine = str(CPUProcessLine)
-            ProcessPid = str(ProcessPid)
-            ProcessPpid = str(ProcessPpid)
-            ProcessPgid = str(ProcessPgid)
-            ProcessName = str(ProcessName)
-            ProcessState = str(ProcessState)
-            ProcessMemorySize = str(ProcessMemorySize)
-            ProcessMemoryRssBytes = str(ProcessMemoryRssBytes)
-            ProcessMemoryRssPCT = str(ProcessMemoryRssPCT)
-            ProcessUsername = str(ProcessUsername)
-            ProcessCpuTotalValue = str(ProcessCpuTotalValue)
-            ProcessCpuTotalPCTNorm = str(ProcessCpuTotalPCTNorm)
-            ProcessCpuTotalPCT = str(ProcessCpuTotalPCT)
-            ProcessFDPath = str(ProcessFDPath)
-            ProcessFdOpen = str(ProcessFdOpen)
-            ProcessCpuStartTime = str(ProcessCpuStartTime)
-            ProcessCmdline = str(ProcessCmdline)
-            ProcessMemoryShare = str(ProcessMemoryShare)
-            ProcessFdOpenlimitSoft = str(ProcessFdOpenlimitSoft)
-            ProcessFdOpenlimitHard = str(ProcessFdOpenlimitHard)
-            ProcessCwd = str(ProcessCwd)
-            ProcessExecutable = str(ProcessExecutable).replace('"', '\"')
-            
-            # Let's construct JSON output for SystemProcess (ELK 7.5.0)
-            JSONToSendValues = (''
-            '\"system\": {'
-            '\"process\": {'
-            '\"memory\": {'
-            '\"rss\": {'
-            '\"pct\": ' + ProcessMemoryRssPCT + ','
-            '\"bytes\": ' + ProcessMemoryRssBytes + '},'
-            '\"share\": ' + ProcessMemoryShare + ','
-            '\"size\": ' + ProcessMemorySize + '},'
-            '\"cmdline\": \"' + ProcessCmdline + '\",'
-            '\"cpu\": {'
-            '\"total\": {'
-            '\"value\": ' + ProcessCpuTotalValue + ','
-            '\"pct\": ' + ProcessCpuTotalPCT + ','
-            '\"norm\": {'
-            '\"pct\": ' + ProcessCpuTotalPCTNorm + '}},'
-            '\"start_time\": \"' + ProcessCpuStartTime + '\"},'
-            '\"fd\": {'
-            '\"open\": ' + ProcessFdOpen + ','
-            '\"limit\": {'
-            '\"soft\": ' + ProcessFdOpenlimitSoft + ','
-            '\"hard\": ' + ProcessFdOpenlimitHard + '}},'
-            '\"state\": \"' + ProcessState + '\"}},'
-            '\"process\": {'
-            '\"args\": ' + FinalCmdString + ','
-            '\"name\": \"' + ProcessExecutable + '\",'
-            '\"pid\": ' + ProcessPid + ','
-            '\"ppid\": ' + ProcessPpid + ','
-            '\"pgid\": ' + ProcessPgid + ','
-            '\"working_directory\": \"' + ProcessCwd + '\",'
-            '\"executable\": \"' + ProcessName + '\"},'
-            '\"user\": {'
-            '\"name\": \"' + ProcessUsername + '\"}')
-           
-           
-            # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
-            
-            # Adding JSON metrics values gathered from OS command
-            JSONToSend = JSONToSend + ',' + JSONToSendValues
-            
-            # Gathering "ELK formatted" dynamic JSON values
-            RetDynamicJSON = GenerateDynamicJson("system.process", "system", "process", ComparisonTimer)
-            
-            # Adding dynamic "ELK Formating" JSON values into final JSON message
-            JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
-            
-            # Let's send JSON message to ELK servers
-            SendToELK(JSONToSend)
-            # print('\JSONToSend\n', JSONToSend, '\n')
-            pass
+                # Convert vars into strings
+                CPUProcessLine = str(CPUProcessLine)
+                ProcessPid = str(ProcessPid)
+                ProcessPpid = str(ProcessPpid)
+                ProcessPgid = str(ProcessPgid)
+                ProcessName = str(ProcessName)
+                ProcessState = str(ProcessState)
+                ProcessMemorySize = str(ProcessMemorySize)
+                ProcessMemoryRssBytes = str(ProcessMemoryRssBytes)
+                ProcessMemoryRssPCT = str(ProcessMemoryRssPCT)
+                ProcessUsername = str(ProcessUsername)
+                ProcessCpuTotalValue = str(ProcessCpuTotalValue)
+                ProcessCpuTotalPCTNorm = str(ProcessCpuTotalPCTNorm)
+                ProcessCpuTotalPCT = str(ProcessCpuTotalPCT)
+                ProcessFDPath = str(ProcessFDPath)
+                ProcessFdOpen = str(ProcessFdOpen)
+                ProcessCpuStartTime = str(ProcessCpuStartTime)
+                ProcessCmdline = str(ProcessCmdline)
+                ProcessMemoryShare = str(ProcessMemoryShare)
+                ProcessFdOpenlimitSoft = str(ProcessFdOpenlimitSoft)
+                ProcessFdOpenlimitHard = str(ProcessFdOpenlimitHard)
+                ProcessCwd = str(ProcessCwd)
+                ProcessExecutable = str(ProcessExecutable).replace('"', '\"')
+                
+                # Let's construct JSON output for SystemProcess (ELK 7.5.0)
+                JSONToSendValues = (''
+                '\"system\": {'
+                '\"process\": {'
+                '\"memory\": {'
+                '\"rss\": {'
+                '\"pct\": ' + ProcessMemoryRssPCT + ','
+                '\"bytes\": ' + ProcessMemoryRssBytes + '},'
+                '\"share\": ' + ProcessMemoryShare + ','
+                '\"size\": ' + ProcessMemorySize + '},'
+                '\"cmdline\": \"' + ProcessCmdline + '\",'
+                '\"cpu\": {'
+                '\"total\": {'
+                '\"value\": ' + ProcessCpuTotalValue + ','
+                '\"pct\": ' + ProcessCpuTotalPCT + ','
+                '\"norm\": {'
+                '\"pct\": ' + ProcessCpuTotalPCTNorm + '}},'
+                '\"start_time\": \"' + ProcessCpuStartTime + '\"},'
+                '\"fd\": {'
+                '\"open\": ' + ProcessFdOpen + ','
+                '\"limit\": {'
+                '\"soft\": ' + ProcessFdOpenlimitSoft + ','
+                '\"hard\": ' + ProcessFdOpenlimitHard + '}},'
+                '\"state\": \"' + ProcessState + '\"}},'
+                '\"process\": {'
+                '\"args\": ' + FinalCmdString + ','
+                '\"name\": \"' + ProcessExecutable + '\",'
+                '\"pid\": ' + ProcessPid + ','
+                '\"ppid\": ' + ProcessPpid + ','
+                '\"pgid\": ' + ProcessPgid + ','
+                '\"working_directory\": \"' + ProcessCwd + '\",'
+                '\"executable\": \"' + ProcessName + '\"},'
+                '\"user\": {'
+                '\"name\": \"' + ProcessUsername + '\"}')
+               
+               
+                # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
+                JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
+                
+                # Adding JSON metrics values gathered from OS command
+                JSONToSend = JSONToSend + ',' + JSONToSendValues
+                
+                # Gathering "ELK formatted" dynamic JSON values
+                RetDynamicJSON = GenerateDynamicJson("system.process", "system", "process", ComparisonTimer)
+                
+                # Adding dynamic "ELK Formating" JSON values into final JSON message
+                JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
+                
+                # Let's send JSON message to ELK servers
+                SendJSON(JSONToSend)
+                # print('\JSONToSend\n', JSONToSend, '\n')
+                pass
 
 def SystemSocketSummary(ComparisonTimer):
     """ This function analyse processes network connections activity and send metrics to ElasticSearch server
@@ -3728,7 +4650,7 @@ def SystemSocketSummary(ComparisonTimer):
     JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
     
     # Let's send JSON message to ELK servers
-    SendToELK(JSONToSend)
+    SendJSON(JSONToSend)
     # print('\JSONToSend\n', JSONToSend, '\n')
     pass
 
@@ -4100,7 +5022,7 @@ def SystemSocket(ComparisonTimer):
                 JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
                 
                 # Let's send JSON message to ELK servers
-                SendToELK(JSONToSend)
+                SendJSON(JSONToSend)
                 
                 # print('\nJSONToSend\n', JSONToSend, '\n')
                 pass
@@ -4191,23 +5113,32 @@ def main(argv):
     global LogFilePath
     global ConfigFilePath
     global LogDir
-    global ELKServers
+    global ElasticServers
+    global FilebeatServers
+    global LogstashServers
     global ELKUsername
     global ELKPassword
-    global ELKPort
+    global ElasticPort
     global ELKWebProtocol
-    global ELKServers
-    global ELKMetricIndexName
-    global ELKLogIndexName
-    global ELKServersAvailable
-    global ELKServersFailed
+    global ElasticIndexName
+    global FilebeatIndexName
+    global ElasticServersAvailable
+    global ElasticServersFailed
+    global FilebeatServersAvailable
+    global FilebeatServersFailed
+    global LogstashServersAvailable
+    global LogstashServersFailed
+    global ElasticServerCnx
+    global FilebeatServerCnx
+    global LogstashServerCnx
     global devnull
     global LPARName
     global ExecutionTimers
     global TargetFileCurrentPosArray
-    global TargetFileMTimeCountArray
+    # global TargetFileMTimeCountArray
     global SendQueueArray
     global FilebeatSendQueueArray
+    global LogstashSendQueueArray
     global FilebeatConfigsArray
     global CustomMetricsConfigsArray
     global TailStateArray
@@ -4232,17 +5163,25 @@ def main(argv):
     # Define ExecutionTimers dictionary
     ExecutionTimers = {}
     # Defining arrays for ELK servers follow-up
-    ELKServers = []
-    ELKServersAvailable = []
-    ELKServersFailed = []
+    ElasticServers = []
+    ElasticServersAvailable = []
+    ElasticServersFailed = []
+    FilebeatServers = []
+    FilebeatServersAvailable = []
+    FilebeatServersFailed = []
+    LogstashServers = []
+    LogstashServersAvailable = []
+    LogstashServersFailed = []
     # Define TargetFileCurrentPosArray dictionary
     TargetFileCurrentPosArray = {}
-    # Define TargetFileCTargetFileMTimeCountArrayurrentPosArray dictionary
-    TargetFileMTimeCountArray = {}
+    # Define TargetFileCTargetFileMTimeCountArray dictionary
+    # TargetFileMTimeCountArray = {}
     # Define SendQueueArray list
     SendQueueArray = []
     # Define FilebeatSendQueueArray list
     FilebeatSendQueueArray = []
+    # Define Logstash SendQueueArray list
+    LogstashSendQueueArray = []
     # Define FilebeatConfigsArray for storing Filebeat config files content
     FilebeatConfigsArray = {}
     # Define FilebeatConfigsArray for storing Custom Metrics config files content
@@ -4257,6 +5196,11 @@ def main(argv):
     SystemMemoryThread = threading.Thread(target=SystemMemory, args=())
     PingPlotterThread = threading.Thread(target=PingPlotter, args=())
     SystemHPMStatThread = threading.Thread(target=SystemHPMStat, args=())
+    
+    # Initializing requests.sessions
+    ElasticServerCnx = requests.session()
+    FilebeatServerCnx = requests.session()
+    LogstashServerCnx = requests.session()
     
     # Define Empty vars for daemon config file and PID file
     LogFilePath = ''
@@ -4322,9 +5266,9 @@ def main(argv):
             
         # Log
         logging.info("\n ---------------------------------------------SUMMARY------------------------------------------------------\n")
-    
+        
         # Check ELK server's availability
-        CheckELKServers()
+        CheckServers()
 
         # Compare timers and schedule work for each metricset
         WorkOnMetrics()
@@ -4409,6 +5353,6 @@ if __name__ == "__main__":
     except OSError as e:
         sys.exit(1)
 
-    # Start the daemon main loop with Parameter.conf file as arg
+    # Start the daemon main loop
     main(sys.argv[1:])
     

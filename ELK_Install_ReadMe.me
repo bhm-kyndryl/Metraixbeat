@@ -1,4 +1,4 @@
-# How to install ELK 7.7.0 on RHEL/CENTOS
+# How to install ELK 7.10.1 on RHEL/CENTOS
 Informations gathered from ELK website mainly
 
 ### Build a Linux VM (RHEL or CentOS)
@@ -21,13 +21,13 @@ Informations gathered from ELK website mainly
 	type=rpm-md
 	
 ### Install Kibana / Elasticsearch / Logstash (not mandatory) / Metrixbeat / Filebeat
-	sudo yum install --enablerepo=elasticsearch elasticsearch-7.7.0-1
-	sudo yum install --enablerepo=elasticsearch kibana-7.7.0-1
-	sudo yum install --enablerepo=elasticsearch logstash-7.7.0-1
-	sudo curl -L -O https://artifacts.elastic.co/downloads/beats/metricbeat/metricbeat-7.7.0-x86_64.rpm
-	sudo curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-7.7.0-x86_64.rpm
-	sudo rpm -vi metricbeat-7.7.0-x86_64.rpm
-	sudo rpm -vi filebeat-7.7.0-x86_64.rpm
+	sudo yum install --enablerepo=elasticsearch elasticsearch-7.10.1-1
+	sudo yum install --enablerepo=elasticsearch kibana-7.10.1-1
+	sudo yum install --enablerepo=elasticsearch logstash-7.10.1-1
+	sudo curl -L -O https://artifacts.elastic.co/downloads/beats/metricbeat/metricbeat-7.10.1-x86_64.rpm
+	sudo curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-7.10.1-x86_64.rpm
+	sudo rpm -vi metricbeat-7.10.1-x86_64.rpm
+	sudo rpm -vi filebeat-7.10.1-x86_64.rpm
 
 ### Modify "/etc/elasticsearch/elasticsearch.yml" to include the following:
 	network.bind_host: 0.0.0.0

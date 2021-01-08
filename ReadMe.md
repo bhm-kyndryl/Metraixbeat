@@ -4,11 +4,22 @@
 ### Main Dashboard screenshot
 
 <img
-src="./LPAR-Main-Dashboard.png"
+src="./AIX-Home-Dashboard.png"
 raw=true
-alt="LPAR Main Dashboard"
+alt="AIX Home Dashboard"
 style="margin-right: 10px;"
 />
+
+### Major update done in January 2021 !
+    Metraixbeat has been improved and tested with ELK 7.10.1
+	Please find main improvements
+	* JSON: Labels and Tags added
+	* Filebeat: Multiline separator (JAVA stack by example) and more dynamic conversions in Target File name implemented
+	* AIX: Error logs (errpt) plugin that sends each alerts to Filebeat index
+	* Network: Bulking messages, different output for Metricbeat, Filebeat and Logstash
+	* Tested on AIX 5.3, 6.1, 7.1 and 7.2
+	* Bug corrections and AIX/Linux/Windows harmonization for common dashboards (ECS standards)
+	
 
 ### Command line to execute (as root)
 	Usage:
@@ -17,72 +28,56 @@ style="margin-right: 10px;"
 	My config:
 	/opt/bin/python3 /opt/freeware/sbin/metraixbeat -c /etc/metraixbeat/Parameters.conf -l /var/adm/ras/metraixbeat/
 
-### Tried to make the same than "metricbeat" LINUX daemon
-### But actually, it can send JSON metrics whatever the receiver is... ELK stack or another JSON receiver stack...)
-	Working without modifications to ELK stack 
-	Fit into already existing Metricbeat JSON structures ("metricbeat-*" index pattern)
-	Possible to specify multiple servers for HA
-	Queueing messages in case of servers failure
-	Performance of the daemon is overall good without much impact on system but sample rate is much lower than LINUX metricbeat... 
-	Please remember that I'm not DEV and I coded that script mainly for IBM Client project
-
-
-### Need some help :-)
-	I really think ELK and AIX can make something together, that's maybe because my boss ordered me so :-)
-	Modern and efficient monitoring can be a good point to maintain our prefered OS at top level, help our diagnostics and give clear infrastructure view on AIX/VIOS
-	I'm looking for bug reporters, testers and maybe developers to help me maintaining and make evoluate the code
-	
-	If you like AIX as much as I do, please join Metraixbeat IBM Github project !
+### Tried to make the same than "metricbeat" LINUX daemon 
+    * But basically, can work with all JSON receiver :-)
+	* Working without modifications to ELK stack
+ 	* Respect of ECS standards
+ 	* Possible to specify multiple Elastic servers for Load Balance + Queueing in case of full failure
+	* Performance of the daemon is overall good without much impact on system but sample rate is (by default) lower than LINUX metricbeat
+    * Filebeat like plugins and custom script results easy integration
 
 
 ### Fully based on Python3 
 	Tested only with 3.7 and 3.8 but should work with other Python3 versions
+	Compatible with AIX 5.3/6.1/7.1/7.2 ( that's to say Python 3.x is installed)
 	Only 2 dependencies to install from PIP before using it
-		requests 	(/opt/bin/python3 -m pip install requests) for handling easily and properly TCP requests
-		pingparsing 	(/opt/bin/python3 -m pip install 'pingparsing<1.0.0') to enable the "Ping Plotter" plugin
+		requests for handling easily and properly TCP requests
+                "/opt/bin/python3 -m pip install requests"
+		pingparsing to use the "Ping Plotter" plugin
+                "/opt/bin/python3 -m pip install 'pingparsing<1.0.0' "
 
 
 ### Few minutes for tuning Parameter.conf file and the daemon is ready to go
-	See Project wiki for all parameters that can be adjusted in "Parameters.conf" file
-
-
-### Adding more AIX metrics for fine monitoring ! (See Project wiki  for full details)
+	See project readme file for all parameters that can be adjusted in "Parameters.conf" file
+	
+	
+### Adding more metrics for AIX for fine monitoring ! (See project dashboards screenshot folder)
 	Added new metricset from "hpmstat"  command (smt mode usage, CPU cache reload and affinity, etc...)
 	Added new metricset from "lparstat" command (monitoring hypervisor work on key metrics)
 	Added metrics for hypervisor, memory and CPU (A lot...)
-	Added tags for Host identification (frame serial, Datacenter, Application)
-
 	
-### Developped new Dashboards and detailed views for AIX to reflect all metricsets (see Project wiki )
-	I've already created 11 Dashboards (for now) for LPAR which are available for download and then import into ELK
-	(Overview/CPU/MEMORY/FC/Network/Disk/Filesystems/Processes/HPM/Hypervisor/Ping Plotter)
-	You will find screenshots of them in Project folder called "Dashboards"
-	I will create Infrastructure Dashboard in the next two months	
+	
+### Developped common AIX/LINUX/WINDOWS and AIX specific Infrastructure Dashboards
+    Will provide "Capacity Planing" and "Hot Points" Dashboards soon 
   
   
-### Tried to add filebeat "basic" functionality inside this metraixbeat daemon
+### Added some filebeat functionality inside this metraixbeat daemon
 	Tailing a file and catch events depending of specified patterns
-	Each Target File and matching patterns can be configured inside a simple JSON file (see Project wiki )
+	Each Target File and matching patterns can be configured inside a simple JSON file with REGEX (see readme files)
 	Target File sanity is checked in many way (by inode, size, name, etc ...)
-	TODO: Need to handle mutliline separator for huge log stack like JAVA. For now, working good with log file content ending with "\n"
+	Implemented mutliline separator for huge log stack like JAVA
+	Implemented different outputs for logs (Elasticsearch or Logstash)
   
   
 ### Added functionality to send the result of SH script directly into ELK
-	Each executed script and sample rate can be configured inside a simple JSON file (see Project wiki )
+	Each executed script and sample rate can be configured inside a simple JSON file (see readme files)
   
   
 ### Things that are not tunable for now and/or need rework
-	Bug in buckets
-		Visual builder is not taking into account "min_doc_count" value and the result is that we can see some gaps in graphs when zoom in is too high (less than 1H).
-		I think this is mainly because my sample rates are lower than metrixbeat. Those empty bucket should be replace by previous non-empty bucket value but it is not... 
-		I will create a ticket to ELK team for that.	
 	ELK Version
-		This development is based on ELK 7.7.0. It should work with other higher versions (until JSON messages are not modified for metricsets...)
-		Didn't tested it on other version as I need time for that and i dont need it now.
+		This development is based on ELK 7.70.1. It should work with lower version if you use Custom Dashboards furnished in this project
 	Index names
 		You can configure a part of the metricbeat and filebeat index but naming convention hardly coded
-		"ex: 'metricbeat' will create metricbeat-7.7.0" (ELK 7.7.0 is this current Metraixbeat version) and rollover should do the rest
-	system.socket.summary
-		This metricset requires a lot of CPU to be generated. I keep it schedule but with low sample rate because very usefull
+		"ex: 'metricbeat' will create metricbeat-7.10.1" (ELK 7.10.1 is this current Metraixbeat version)
 	system.socket metricset can be generated but take a lot of CPU resources
-		This metricset requires too much CPU to be generated. I disable it by scheduling a looooong schedule in "Parameters.conf" file... Need rework !
+		This metricset requires too much CPU to be generated. I disable it by scheduling it very high in "Parameters.conf" by default... Need rework !

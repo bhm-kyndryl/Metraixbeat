@@ -1,49 +1,54 @@
 ### JSON format is matching with the Metricbeat version stored in ELKMonitoringVersion
 	Should not be changed until metraixbeat is tested for different ELK versions
-	"ELKMonitoringVersion": "7.7.0"
+	"ELKMonitoringVersion": "7.10.0"
 
 
 ### JSON format is matching with the Metricbeat version stored in ECSVersion
 	Should not be changed until metraixbeat is tested for different ECS versions
-	"ECSVersion": "1.1.0"
+	"ECSVersion": "1.5.0"
 
 
 ### Set variable for ElasticSearch server Hostname running Metricbeat config
 	Can add multiple servers for HA
 		Exemple:
-		"ELKServers": ["server00042.example.com", "server00052.example.com", "server00050.example.com", "server00053.example.com"]
-		"ELKServers": ["server00042.example.com"]
-	"ELKServers": ["ELKServers"]
+		"ElasticServers": ["server00042.example.com", "server00052.example.com", "server00050.example.com", "server00053.example.com"]
+		"ElasticServers": ["server00042.example.com"]
+	"ElasticServers": ["ELKServers"]
+
+### Set variable for ELK TCP port
+	"ElasticPort": "9200"
+	
+	
+### You will have the same configuration items for filebeat and logstash
 
 
-### Set variable for ELK web username
+### Set variable for ELK username
 	"ELKUsername": "elastic"
 
 
-### Set variable for ELK web password
+### Set variable for ELK password
 	"ELKPassword": "elastic"
 
 
-### Set variable for ELK TCP port
-	"ELKPort": "9200"
-	
-
 ### Set variable for ELK HTTP protocol used
 	"ELKWebProtocol": "http"
+	or
+	"ELKWebProtocol": "https"
 
 
-### Set variable for SSL certificate (ROOT CA) path to file (.pem was working for me) only if HTTPS is used. Can be concatenation of ROOT CA and INTERMEDIATE",
-	"ELKCertificate": "",
+### Set variable for SSL certificate (ROOT CA) path to file (.pem was working for me) only if HTTPS is used. Can be concatenation of ROOT CA and INTERMEDIATE
+	"ELKCertificate": ""
 
 
-### Set variable for the ELK index name. 
-	ex: 'metricbeat' will create metricbeat-7.7.0. Rollover should make the rest
-	"ELKMetricIndexName": "metricbeat"
+### Set variable for the Metrics index name
+	ex: 'metricbeat' will create metricbeat-7.10.1. Write alias should make the rest if configured
+	"ElasticIndexName": "metricbeat"
 
 
-### Set variable for the ELK index name. 
-	ex: 'filebeat' will create filebeat-7.7.0 Rollover should make the rest
-	"ELKLogIndexName": "filebeat"
+### Set variable for the Logs index name
+	ex: 'filebeat' will create filebeat-7.10.1. Write alias should make the rest if configured
+	"FilebeatIndexName": "filebeat"
+
 
 ### Adding DNS Suffix to hostname if not existing
 		Exemple:
@@ -51,17 +56,20 @@
 	"FQDN": ""
 
 
-### DC site hosting the LPAR for easy reporting
-	"HostingSite": "DataCenter 1"
+### Tags for easy keywork adding
+		Exemple:
+		"tags": ["DataCenter 1","Application name"]
+	"tags": [""]
+	
 
-
-### Application name hosted by the LPAR for easy reporting
-	"LPARAppName": "Undefined Application"
-
-
-### Maximum historical JSON messages (queued when ELK server was down) to proceed at each script Cycle
-	Keep this value as it is will save CPU when reprocessing
-	"ReprocessingValueAtOnce": "5"
+### Labels for easy labeling (Power hosting frame SN is automatically added in label list)
+		Exemple:
+		"labels": ["key1:value1","key2:value2","key3:value3"],
+	"labels": [""]
+	
+	
+### Maximum number of JSON messages to queue before sending JSON Bulk message. 
+	"BulkMaxSize": "10"
 
 
 ### Time to wait before making sanity checks on Filebeat tail's processes (in seconds)
@@ -79,15 +87,10 @@
 	"DiskSampleRate": "1"
 
 
-### If different than 0, set the limit of processes that must be taken into account while checking TOP processes CPU and MEME activity
+### If different than 0, set the limit of processes that must be taken into account while checking TOP processes CPU and MEM activity
 	More the limit is high, more the daemon will use CPU
 	"TopProcesses": "10"
-
-
-### SAFETY - Time to wait before reloading a Tail process for which TargetFile has not been modified since 1 day (in minutes)
-	Need some rework but it is safe to keep this value like this
-	"TailReloadValue": "1440"
-
+	
 
 ### List of servers to be checked with PingPlotter plugin
 		Exemple:
@@ -116,14 +119,15 @@
 
 
 ### Limit the number of monitored network adapters to the given list. Sort and separate them by comma
-	Exemple for all interfaces:                "EntRestricted": "all"
-	Exemple for all ent17,  interfaces:        "EntRestricted": "ent16,en17,en18"
+	Exemple for all interfaces: 		"EntRestricted": "all"
+	Exemple for all ent interfaces: 		"EntRestricted": "ent16,ent17,ent18"
+	Exemple for all en  interfaces: 		"EntRestricted": "en16,en17,en18"
 	"EntRestricted": "all"
 
 
 ### Limit the number of monitored fiber channel adapters to the given list. Sort and separate them by comma
-	Exemple for all interfaces:                                 "FcsRestricted": "all"
-	Exemple for fcs16, fcs17 and fcs18 interfaces only: 		"FcsRestricted": "fcs16,fcs17,fcs18"
+	Exemple for all interfaces: 		"FcsRestricted": "all"
+	Exemple for all interfaces: 		"FcsRestricted": "fcs16,fcs17,fcs18"
 	"FcsRestricted": "all"
 
 
@@ -131,12 +135,6 @@
 	Exemple for all interfaces: 		"HdiskRestricted": "all"
 	Exemple for all interfaces: 		"HdiskRestricted": "hdisk16,hdisk17,hdisk18"
 	"HdiskRestricted": "all"
-
-
-### Limit of time (in minutes) to wait before deleting historical queued JSON mesages
-	Keeping too much historical JSON messages for reprocessing is CPU costly. Need to flush !
-	"QueueingTimerLimit": "720"
-
 	
 
 ### Topic timers variables (in seconds). Time to wait before sending new metric values to ELK server

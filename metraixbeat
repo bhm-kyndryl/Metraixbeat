@@ -804,7 +804,8 @@ def GenerateStaticJSON():
     # Generating labels JSON with key/value pairs
     LabelString = '\"labels\":{'
     for Label in Labels:
-        LabelString += '\"' + Label.replace(':','\":\"') + '\",'
+        if len(Label) != 0:
+            LabelString += '\"' + Label.replace(':','\":\"') + '\",'
         
     LabelString = LabelString[:-1]
     LabelString += '}'

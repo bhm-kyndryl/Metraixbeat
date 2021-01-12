@@ -2311,19 +2311,22 @@ def FilebeatTail(FilebeatConfigName):
         if len(CheckTargetFile) != 0:
             # Checking if CurrentTargetFile name still match with original pattern
             if str(CheckTargetFile[0]) != CurrentTargetFile:
-            # Mismatch detected, checking if a new file exists when applying Target File naming
-            # Checking if file exists or not
-            if os.path.exists(str(CheckTargetFile[0])):
-                # A new file currently exists
-                TailStateArray[FilebeatConfigName] = False
-                
-                # Resting last tailed line for CurrentTargetFile as the file has changed
-                TargetFileCurrentPosArray[FilebeatConfigName] = 0
-                
+                # Mismatch detected, checking if a new file exists when applying Target File naming
+                # Checking if file exists or not
+                if os.path.exists(str(CheckTargetFile[0])):
+                    # A new file currently exists
+                    TailStateArray[FilebeatConfigName] = False
+                    
+                    # Resting last tailed line for CurrentTargetFile as the file has changed
+                    TargetFileCurrentPosArray[FilebeatConfigName] = 0
+                    
+                    # Log
+                    logging.info("            * File name pattern in configuration file does not match anymore with current file: stopping Tail thread !")
+                    # Exiting function
+                    return
+            else:
                 # Log
-                logging.info("            * File name pattern in configuration file does not match anymore with current file: stopping Tail thread !")
-                # Exiting function
-                return
+                logging.info("            * Refreshing filename: Ok !")  
         else:
             # No file exists corresponding to this name stopping, threads
             TailStateArray[FilebeatConfigName] = False
@@ -2335,10 +2338,6 @@ def FilebeatTail(FilebeatConfigName):
             logging.info("            * File name pattern in configuration file does not match anymore with an existing file: stopping Tail thread !")
             # Exiting function
             return
-    else:
-        # Log
-            logging.info("            * Refreshing filename: Ok !")
-
     else:
         # No thread are running for this config, let's start a new one
         

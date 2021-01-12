@@ -5,7 +5,7 @@ __author__ = "Benjamin Herson-Macarel"
 #__copyright__ = ""
 __credits__ = ["Who", "wants", "to", "be", "added", "???"]
 __license__ = "GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007"
-__version__ = "1.21.1"
+__version__ = "1.21.4"
 __maintainer__ = "Benjamin Herson-Macarel"
 __email__ = "benjamin.herson-macarel-isc.france@ibm.com"
 __status__ = "Stable"
@@ -70,7 +70,6 @@ def LoadDaemonConfig():
     global FilebeatServersFailed
     global LogstashServersFailed
     global FQDN
-    global ReprocessingValueAtOnce
     global TailRefreshValue
     global CycleSleepTime
     global DiskSampleRate
@@ -1172,7 +1171,7 @@ def SendToMetricbeat(BulkJSON, BulkSize):
     try:
         # Define ELK url depending of index and choosen Elastic server
         CurrentIndex = ElasticIndexName + '-' + ELKMonitoringVersion
-        ElasticServerURL = ELKWebProtocol + '://' + ElasticServer + ':' + ElasticPort + '/' + CurrentIndex + '/_doc/_bulk'
+        ElasticServerURL = ELKWebProtocol + '://' + ElasticServer + ':' + ElasticPort + '/' + CurrentIndex + '/_bulk'
         
         # Defining credential for web request
         ELKCreds = (ELKUsername, ELKPassword)
@@ -1301,7 +1300,7 @@ def SendToFilebeat(BulkJSON, BulkSize):
     try:
         # Define ELK url depending of index and choosen Filebeat server
         CurrentIndex = FilebeatIndexName + '-' + ELKMonitoringVersion
-        FilebeatServerURL = ELKWebProtocol + '://' + FilebeatServer + ':' + FilebeatPort + '/' + CurrentIndex + '/_doc/_bulk'
+        FilebeatServerURL = ELKWebProtocol + '://' + FilebeatServer + ':' + FilebeatPort + '/' + CurrentIndex + '/_bulk'
         
         # Defining credential for web request
         ELKCreds = (ELKUsername, ELKPassword)
@@ -1430,7 +1429,7 @@ def SendToLogstash(BulkJSON, BulkSize):
     # Send Data to Logstash server with a Try/Catch
     try:
         # Define ELK url depending of index and choosen Logstash server
-        LogstashServerURL = ELKWebProtocol + '://' + LogstashServer + ':' + LogstashPort + '/_doc/_bulk'
+        LogstashServerURL = ELKWebProtocol + '://' + LogstashServer + ':' + LogstashPort + '/_bulk'
         
         # Defining credential for web request
         ELKCreds = (ELKUsername, ELKPassword)
@@ -2719,77 +2718,78 @@ def PingPlotter(ComparisonTimer):
     
     # Making test ping for all target in config file
     for PingTarget in PingPlotterTargets.split(','):
-        # Generating current ELK timestamp for JSON message
-        SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
-        
-        # To move both fields to Parameter.conf file
-        PingSamples = 5
-        PingTimeout = "1s"
-        
-        # Configuring pingparsin package
-        ping_parser = pingparsing.PingParsing()
-        transmitter = pingparsing.PingTransmitter()
+        if len(PingTarget) != 0:
+            # Generating current ELK timestamp for JSON message
+            SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+            
+            # To move both fields to Parameter.conf file
+            PingSamples = 5
+            PingTimeout = "1s"
+            
+            # Configuring pingparsin package
+            ping_parser = pingparsing.PingParsing()
+            transmitter = pingparsing.PingTransmitter()
 
-        # Setting ping destination and timeout
-        transmitter.destination = PingTarget
-        transmitter.timeout = PingTimeout
+            # Setting ping destination and timeout
+            transmitter.destination = PingTarget
+            transmitter.timeout = PingTimeout
 
-        # Setting the number of ping to execute
-        transmitter.count = PingSamples
-        PingResult = transmitter.ping()
+            # Setting the number of ping to execute
+            transmitter.count = PingSamples
+            PingResult = transmitter.ping()
 
-        if 'returncode=0' in str(PingResult):
-            # Ping is ok, let's format output and JSON message
-            ResultDict = json.loads(json.dumps(ping_parser.parse(PingResult).as_dict()))
-            
-            # Let's construct JSON output for SystemPingPlotter(ELK 7.5.0)
-            JSONToSendValues = (''
-            '\"system\":{\"pingplotter\":{\"destination\":\"' + str(ResultDict["destination"]) + '\",'
-            '\"packet_loss_rate\":' + str(float(ResultDict["packet_loss_rate"]) / 100) + ',\"rtt_avg\":' + str(ResultDict["rtt_avg"]) + ','
-            '\"rtt_max\":' + str(ResultDict["rtt_max"]) + ',\"packet_duplicate_rate\":' + str(float(ResultDict["packet_duplicate_rate"]) / 100) + '}}')
-           
-            # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
-            
-            # Adding JSON metrics values gathered from OS command
-            JSONToSend = JSONToSend + ',' + JSONToSendValues
-            
-            # Gathering "ELK formatted" dynamic JSON values
-            RetDynamicJSON = GenerateDynamicJson("system.pingplotter", "system", "pingplotter", ComparisonTimer)
-            
-            # Adding dynamic "ELK Formating" JSON values into final JSON message
-            JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
-            
-            # Let's send JSON message to ELK servers
-            SendJSON(JSONToSend)
-            
-            # print('\JSONToSend\n', JSONToSend, '\n')
-            
-        else:
-            # An error has been thrown by pingparsing, maybe resolution error. 
-            # Setting all counters to 0 and packet lost to 100%
-            
-            # Let's construct JSON output for SystemPingPlotter(ELK 7.5.0)
-            JSONToSendValues = (''
-            '\"system\":{\"pingplotter\":{\"destination\":\"' + PingTarget + '\",\"packet_loss_rate\":100,\"rtt_avg\":0,\"rtt_max\":0,\"packet_duplicate_rate\":0}}')
-           
-            # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
-            
-            # Adding JSON metrics values gathered from OS command
-            JSONToSend = JSONToSend + ',' + JSONToSendValues
-            
-            # Gathering "ELK formatted" dynamic JSON values
-            RetDynamicJSON = GenerateDynamicJson("system.customping", "system", "customping", ComparisonTimer)
-            
-            # Adding dynamic "ELK Formating" JSON values into final JSON message
-            JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
-            
-            # Let's send JSON message to ELK servers
-            SendJSON(JSONToSend)
-            
-            # print('\JSONToSend\n', JSONToSend, '\n')
-            pass
+            if 'returncode=0' in str(PingResult):
+                # Ping is ok, let's format output and JSON message
+                ResultDict = json.loads(json.dumps(ping_parser.parse(PingResult).as_dict()))
+                
+                # Let's construct JSON output for SystemPingPlotter(ELK 7.5.0)
+                JSONToSendValues = (''
+                '\"system\":{\"pingplotter\":{\"destination\":\"' + str(ResultDict["destination"]) + '\",'
+                '\"packet_loss_rate\":' + str(float(ResultDict["packet_loss_rate"]) / 100) + ',\"rtt_avg\":' + str(ResultDict["rtt_avg"]) + ','
+                '\"rtt_max\":' + str(ResultDict["rtt_max"]) + ',\"packet_duplicate_rate\":' + str(float(ResultDict["packet_duplicate_rate"]) / 100) + '}}')
+               
+                # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
+                JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
+                
+                # Adding JSON metrics values gathered from OS command
+                JSONToSend = JSONToSend + ',' + JSONToSendValues
+                
+                # Gathering "ELK formatted" dynamic JSON values
+                RetDynamicJSON = GenerateDynamicJson("system.pingplotter", "system", "pingplotter", ComparisonTimer)
+                
+                # Adding dynamic "ELK Formating" JSON values into final JSON message
+                JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
+                
+                # Let's send JSON message to ELK servers
+                SendJSON(JSONToSend)
+                
+                # print('\JSONToSend\n', JSONToSend, '\n')
+                
+            else:
+                # An error has been thrown by pingparsing, maybe resolution error. 
+                # Setting all counters to 0 and packet lost to 100%
+                
+                # Let's construct JSON output for SystemPingPlotter(ELK 7.5.0)
+                JSONToSendValues = (''
+                '\"system\":{\"pingplotter\":{\"destination\":\"' + PingTarget + '\",\"packet_loss_rate\":100,\"rtt_avg\":0,\"rtt_max\":0,\"packet_duplicate_rate\":0}}')
+               
+                # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
+                JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
+                
+                # Adding JSON metrics values gathered from OS command
+                JSONToSend = JSONToSend + ',' + JSONToSendValues
+                
+                # Gathering "ELK formatted" dynamic JSON values
+                RetDynamicJSON = GenerateDynamicJson("system.customping", "system", "customping", ComparisonTimer)
+                
+                # Adding dynamic "ELK Formating" JSON values into final JSON message
+                JSONToSend = JSONToSend + ',' + RetDynamicJSON + '}'
+                
+                # Let's send JSON message to ELK servers
+                SendJSON(JSONToSend)
+                
+                # print('\JSONToSend\n', JSONToSend, '\n')
+                pass
 
 def ErrptLog(ComparisonTimer):
     """ This function detects new Errorlogs and send them to ElasticSearch server

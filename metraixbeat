@@ -5,7 +5,7 @@ __author__ = "Benjamin Herson-Macarel"
 #__copyright__ = ""
 __credits__ = ["Who", "wants", "to", "be", "added", "???"]
 __license__ = "GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007"
-__version__ = "1.21.4"
+__version__ = "1.21.5"
 __maintainer__ = "Benjamin Herson-Macarel"
 __email__ = "benjamin.herson-macarel-isc.france@ibm.com"
 __status__ = "Stable"
@@ -309,19 +309,43 @@ def LoadPluginConfig():
                         PatternMatch = PatternMatch + Pattern + "|"
                     PatternMatch = PatternMatch[:-1]
                     
-                    # Converting date format, if any, in target file  
+                    # Converting date format, if any, in target file                   
                     CurrentTargetFile = ConvertFileName(JSONValues["TargetFile"])
-                    
+
                     # Checking if file exists
-                    try:
-                        # Storing the last line of the Target file to start tail on
-                        with open(CurrentTargetFile, "r") as LastLine:
-                            TargetFileLastLine = len(LastLine.readlines()) + 1
-                            
-                        # Storing the inode and size of the Target file to start tail on
-                        TargetFileInode = os.stat(CurrentTargetFile).st_ino
-                        TargetFileSize = os.stat(CurrentTargetFile).st_size
+                    try:                        
+                        # Looking for corresponding file
+                        OSCommand = "ls -lart " + CurrentTargetFile + " | tail -n 1 | awk '{print $NF}'"
+                        CheckTargetFile = subprocess.Popen(OSCommand, shell=True, stdout=subprocess.PIPE, stderr = devnull).stdout
+                        CheckTargetFile = CheckTargetFile.read().decode().split()
                         
+                        # Checking if file exists
+                        if os.path.exists(str(CheckTargetFile[0])):
+                            # If yes
+                            CurrentTargetFile = str(CheckTargetFile[0])
+                            
+                            # Storing the last line of the Target file to start tail on
+                            with open(CurrentTargetFile, "r") as LastLine:
+                                TargetFileLastLine = len(LastLine.readlines()) + 1
+                                
+                            # Storing the inode and size of the Target file to start tail on
+                            TargetFileInode = os.stat(CurrentTargetFile).st_ino
+                            TargetFileSize = os.stat(CurrentTargetFile).st_size
+                        else:
+                            # If no
+                            # File does not exists, rising a warning but loading config with 0 default values
+                            LastLine = 0
+                            TargetFileInode = 0
+                            TargetFileSize = 0
+                            TargetFileLastLine = 0
+                            
+                            # Log
+                            logging.info("            ==> Warning while loading " + f_name + " config file !")
+                            logging.info("                File does not exists yet, daemon will retry later...")
+                            
+                            # Initializing state value to start tail from line 1 when file will be available
+                            TargetFileCurrentPosArray[f_name] = 0
+                            
                     except:
                         # File does not exists, rising a warning but loading config with 0 default values
                         LastLine = 0
@@ -704,7 +728,7 @@ def ConvertFileName(FileName):
     FileNameC = FileNameC.replace('%y', datetime.datetime.now().strftime("%y"))
     FileNameC = FileNameC.replace('%-y', datetime.datetime.now().strftime("%-y"))
     FileNameC = FileNameC.replace('%Y', datetime.datetime.now().strftime("%Y"))
-    FileNameC = FileNameC.replace('%YY', datetime.datetime.now().strftime("%y"))
+    FileNameC = FileNameC.replace('%YY', datetime.datetime.now().strftime("%YY"))
     FileNameC = FileNameC.replace('%H', datetime.datetime.now().strftime("%H"))
     FileNameC = FileNameC.replace('%-H', datetime.datetime.now().strftime("%-H"))
     FileNameC = FileNameC.replace('%I', datetime.datetime.now().strftime("%I"))
@@ -2301,26 +2325,41 @@ def FilebeatTail(FilebeatConfigName):
         # Converting date format, if any, in target file  
         CurrentTargetFile = ConvertFileName(TargetFile)
         
-        # Checking if file exists or not
-        if os.path.exists(CurrentTargetFile):
-        # The file currently exists
-            # Log
-            logging.info("    * Initiating tail process on " + CurrentTargetFile)
+        # Looking for corresponding file
+        OSCommand = "ls -lart " + CurrentTargetFile + " | tail -n 1 | awk '{print $NF}' 2>/dev/null"
+        CheckTargetFile = subprocess.Popen(OSCommand, shell=True, stdout=subprocess.PIPE, stderr = devnull).stdout
+        CheckTargetFile = CheckTargetFile.read().decode().split()
+        
+        # Handling case where file not found from OS command
+        if len(CheckTargetFile) != 0:
+            # Checking if file exists or not
+            if os.path.exists(str(CheckTargetFile[0])):
+                # The file currently exists
+                CurrentTargetFile = str(CheckTargetFile[0])
+                
+                # Log
+                logging.info("    * Initiating tail process on " + CurrentTargetFile)
 
-            # Setting thread as active
-            TailStateArray[FilebeatConfigName] = True
+                # Setting thread as active
+                TailStateArray[FilebeatConfigName] = True
 
-            # Refreshing CurrentTargetFile inode and size
-            CurrentTargetFileSize = str(os.stat(CurrentTargetFile).st_size)
-            CurrentTargetFileInode = str(os.stat(CurrentTargetFile).st_ino)
+                # Refreshing CurrentTargetFile inode and size
+                CurrentTargetFileSize = str(os.stat(CurrentTargetFile).st_size)
+                CurrentTargetFileInode = str(os.stat(CurrentTargetFile).st_ino)
 
-            # Formating string and storing into
-            ConfigString = CurrentTargetFile + ',' + TargetFile + ',' + PatternMatch + ',' + LastTailLine + ',' + CurrentTargetFileInode + ',' + CurrentTargetFileSize + ',' + MultilineSeparator + ',' + Output
-            FilebeatConfigsArray[FilebeatConfigName] = ConfigString
+                # Formating string and storing into
+                ConfigString = CurrentTargetFile + ',' + TargetFile + ',' + PatternMatch + ',' + LastTailLine + ',' + CurrentTargetFileInode + ',' + CurrentTargetFileSize + ',' + MultilineSeparator + ',' + Output
+                FilebeatConfigsArray[FilebeatConfigName] = ConfigString
 
-            # Launching thread
-            FilebeatConfigThread = threading.Thread(target=TailPythonStyle, name=FilebeatConfigThreadName, args=(FilebeatConfigName, CurrentTargetFile, PatternMatch, MultilineSeparator, Output))
-            FilebeatConfigThread.start()
+                # Launching thread
+                FilebeatConfigThread = threading.Thread(target=TailPythonStyle, name=FilebeatConfigThreadName, args=(FilebeatConfigName, CurrentTargetFile, PatternMatch, MultilineSeparator, Output))
+                FilebeatConfigThread.start()
+            else:
+                # The file does not exists
+                logging.info("    * Initiating tail process on Target File " + CurrentTargetFile + " impossible, the file does not exists !")
+                
+                # Initializing state value to start tail from line 1 when file will be available
+                TargetFileCurrentPosArray[FilebeatConfigName] = 0
         else:
             # The file does not exists
             logging.info("    * Initiating tail process on Target File " + CurrentTargetFile + " impossible, the file does not exists !")

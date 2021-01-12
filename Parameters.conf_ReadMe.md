@@ -119,21 +119,21 @@
 
 
 ### Limit the number of monitored network adapters to the given list. Sort and separate them by comma
-	Exemple for all interfaces: 		"EntRestricted": "all"
-	Exemple for all ent interfaces: 		"EntRestricted": "ent16,ent17,ent18"
-	Exemple for all en  interfaces: 		"EntRestricted": "en16,en17,en18"
+	Exemple for all interfaces: 		"EntRestricted": "all" (all adapters are monitored)
+	Exemple for all ent interfaces: 		"EntRestricted": "ent16,ent17,ent18" (only specified adapters are monitored)
+	Exemple for all en  interfaces: 		"EntRestricted": "en16,en17,en18" (only specified adapters are monitored)
 	"EntRestricted": "all"
 
 
 ### Limit the number of monitored fiber channel adapters to the given list. Sort and separate them by comma
-	Exemple for all interfaces: 		"FcsRestricted": "all"
-	Exemple for all interfaces: 		"FcsRestricted": "fcs16,fcs17,fcs18"
+	Exemple for all interfaces: 		"FcsRestricted": "all" (all adapters are monitored)
+	Exemple for all interfaces: 		"FcsRestricted": "fcs16,fcs17,fcs18" (only specified adapters are monitored)
 	"FcsRestricted": "all"
 
 
 ### Limit the number of monitored HDISK devices to the given list. Sort and separate them by comma
-	Exemple for all interfaces: 		"HdiskRestricted": "all"
-	Exemple for all interfaces: 		"HdiskRestricted": "hdisk16,hdisk17,hdisk18"
+	Exemple for all interfaces: 		"HdiskRestricted": "all" (all disks are monitored)
+	Exemple for all interfaces: 		"HdiskRestricted": "hdisk16,hdisk17,hdisk18" (only specified adapters are monitored)
 	"HdiskRestricted": "all"
 	
 

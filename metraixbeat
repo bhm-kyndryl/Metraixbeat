@@ -5,7 +5,7 @@ __author__ = "Benjamin Herson-Macarel"
 #__copyright__ = ""
 __credits__ = ["Who", "wants", "to", "be", "added", "???"]
 __license__ = "GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007"
-__version__ = "1.21.6"
+__version__ = "1.21.7"
 __maintainer__ = "Benjamin Herson-Macarel"
 __email__ = "benjamin.herson-macarel-isc.france@ibm.com"
 __status__ = "Stable"
@@ -2302,33 +2302,41 @@ def FilebeatTail(FilebeatConfigName):
         # Converting date format from original TargetFile string, if any
         IfNewTargetFile = ConvertFileName(TargetFile)
         
-        # Checking if CurrentTargetFile name still match with original pattern
-        if IfNewTargetFile != CurrentTargetFile:
+        # Looking for corresponding file
+        OSCommand = "ls -lart " + IfNewTargetFile + " | tail -n 1 | awk '{print $NF}' 2>/dev/null"
+        CheckTargetFile = subprocess.Popen(OSCommand, shell=True, stdout=subprocess.PIPE, stderr = devnull).stdout
+        CheckTargetFile = CheckTargetFile.read().decode().split()
+  
+        # Handling case where file not found from OS command
+        if len(CheckTargetFile) != 0:
+            # Checking if CurrentTargetFile name still match with original pattern
+            if str(CheckTargetFile[0]) != CurrentTargetFile:
             # Mismatch detected, checking if a new file exists when applying Target File naming
-            # Looking for corresponding file
-            OSCommand = "ls -lart " + IfNewTargetFile + " | tail -n 1 | awk '{print $NF}' 2>/dev/null"
-            CheckTargetFile = subprocess.Popen(OSCommand, shell=True, stdout=subprocess.PIPE, stderr = devnull).stdout
-            CheckTargetFile = CheckTargetFile.read().decode().split()
-            
-            # Handling case where file not found from OS command
-            if len(CheckTargetFile) != 0:
-                # Checking if file exists or not
-                if os.path.exists(str(CheckTargetFile[0])):
-                    # A new file currently exists
-                    TailStateArray[FilebeatConfigName] = False
-                    
-                    # Resting last tailed line for CurrentTargetFile as the file has changed
-                    TargetFileCurrentPosArray[FilebeatConfigName] = 0
-                    
-                    # Log
-                    logging.info("            * File name pattern in configuration file does not match anymore with current file: stopping Tail thread !")
-                    # Exiting function
-                    return
-            else:
-                # No new file exists, we keep watching the current one
-                pass
+            # Checking if file exists or not
+            if os.path.exists(str(CheckTargetFile[0])):
+                # A new file currently exists
+                TailStateArray[FilebeatConfigName] = False
+                
+                # Resting last tailed line for CurrentTargetFile as the file has changed
+                TargetFileCurrentPosArray[FilebeatConfigName] = 0
+                
+                # Log
+                logging.info("            * File name pattern in configuration file does not match anymore with current file: stopping Tail thread !")
+                # Exiting function
+                return
         else:
+            # No file exists corresponding to this name stopping, threads
+            TailStateArray[FilebeatConfigName] = False
+                
+            # Resting last tailed line for CurrentTargetFile as the file has changed
+            TargetFileCurrentPosArray[FilebeatConfigName] = 0
+            
             # Log
+            logging.info("            * File name pattern in configuration file does not match anymore with an existing file: stopping Tail thread !")
+            # Exiting function
+            return
+    else:
+        # Log
             logging.info("            * Refreshing filename: Ok !")
 
     else:

@@ -35,13 +35,13 @@
 		
 		Exemple:
 		For matching "test" into the following string
-			"It is my test"
+			"It is my test string"
 			
-		You can use by example the following REGEX
-			^\w[test].*$
+		You can use by example the following REGEX to match " test " 
+			^.* test \w*$
 			
 		Then, escape "\" characters and add it into config file
-			"Patterns": "^\\w[test].*$"
+			"Patterns": "^.* test \\w*$"
 		
 	### Multiline Separator to detect the end of the entrie in a file, if different than "\n"
 	    If traditional log file ending with "\n", then let this field empty ("")
@@ -55,13 +55,13 @@
 		
 		Exemple:
 		For line in logfile begining with 
-			\#\#\#\#<Jan 8, 2021 2:48:35 PM UTC>
+			####<Jan 8, 2021 2:48:35 PM UTC>
 			
 		You will have a matching REGEX on pythex.org like
-			####<\w* \w*, \w* \w*:\w*:\w* \w{2} \w{3}>
+			####<\w* \w*, \w* \w*:\w*:\w* \w* \w*>
 			
 		Then, escape "\" characters and add it into config file
-			"MultilineSeparator": "####<\\w* \\w*, \\w* \\w*:\\w*:\\w* \\w{2} \\w{3}>"
+			"MultilineSeparator": "####<\\w* \\w*, \\w* \\w*:\\w*:\\w* \\w* \\w*>"
 			
 	### Output need to be specified to go to different destinations
 	    This parameter can be "Metricbeat", "Filebeat" or "Logstash", and will ouput according to Parameters.conf configuration

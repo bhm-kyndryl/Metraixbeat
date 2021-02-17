@@ -5,7 +5,7 @@ __author__ = "Benjamin Herson-Macarel"
 #__copyright__ = ""
 __credits__ = ["Who", "wants", "to", "be", "added", "???"]
 __license__ = "GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007"
-__version__ = "1.21.9"
+__version__ = "1.21.10"
 __maintainer__ = "Benjamin Herson-Macarel"
 __email__ = "benjamin.herson-macarel-isc.france@ibm.com"
 __status__ = "Stable"
@@ -97,7 +97,6 @@ def LoadDaemonConfig():
     global EntRestricted
     global FcsRestricted
     global HdiskRestricted
-    global NMONSeq
     global Tags
     global Tagz
     global Labels
@@ -146,11 +145,6 @@ def LoadDaemonConfig():
                 LogstashServersFailed = []
                 ElasticIndexName = JSONValues["ElasticIndexName"]
                 FilebeatIndexName = JSONValues["FilebeatIndexName"]
-                
-                
-                
-                # Setting NMON sequence counter to 0
-                NMONSeq = 0
 
                 # Script functional variables
                 # Time to wait before refreshing tail's processes status (in seconds)
@@ -213,6 +207,14 @@ def LoadDaemonConfig():
                 FcsRestricted = JSONValues["FcsRestricted"]
                 # HDISK devices
                 HdiskRestricted = JSONValues["HdiskRestricted"]
+                
+                # Checking if Proxy bypass is required
+                BypassProxy = JSONValues["bypassproxy"]
+                
+                # Disabling proxy if requested
+                if BypassProxy == 'yes':
+                    os.environ['no_proxy'] = '*'
+                
         except:
             # problem encountered while loading JSON daemon configuration file, exiting
             logging.info("            ==> Error while loading " + ConfigFilePath + " daemon config file !")

@@ -49,6 +49,9 @@
 	ex: 'filebeat' will create filebeat-7.10.1. Write alias should make the rest if configured
 	"FilebeatIndexName": "filebeat"
 
+### Request to bypass the proxy configured in OS (http_proxy and https_proxy vars)
+	"yes" will bypass all proxies configured on OS side
+	"no"  will keep proxies configured on OS side enabled
 
 ### Adding DNS Suffix to hostname if not existing
 		Exemple:

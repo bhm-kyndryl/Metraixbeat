@@ -5,7 +5,7 @@ __author__ = "Benjamin Herson-Macarel"
 #__copyright__ = ""
 __credits__ = ["Who", "wants", "to", "be", "added", "???"]
 __license__ = "GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007"
-__version__ = "1.21.7"
+__version__ = "1.21.9"
 __maintainer__ = "Benjamin Herson-Macarel"
 __email__ = "benjamin.herson-macarel-isc.france@ibm.com"
 __status__ = "Stable"
@@ -2511,7 +2511,7 @@ def TailPythonStyle(FilebeatConfigName, TargetFile, PatternMatch, MultilineSepar
                             '')
                             
                             # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-                            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSONFilebeat + CustomJSONToSend + '}'
+                            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSONFilebeat + CustomJSONToSend + '}'
                             
                             # Let's send JSON message to Elastic, Filebeat or Logstash server
                             if Output == 'Metricbeat':
@@ -2532,7 +2532,7 @@ def TailPythonStyle(FilebeatConfigName, TargetFile, PatternMatch, MultilineSepar
                 else:
                     # New line has been written, let's store datetime if not already
                     if (len(SeqIdTimestamp) == 0):
-                        SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+                        SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
                     
                     # Checking if log line start
                     if (bool(re.search(MultilineSeparator, NewLine))) and (LogLineStart == False):
@@ -2582,7 +2582,7 @@ def TailPythonStyle(FilebeatConfigName, TargetFile, PatternMatch, MultilineSepar
                             '')
                             
                             # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-                            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSONFilebeat + CustomJSONToSend + '}'
+                            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSONFilebeat + CustomJSONToSend + '}'
                             
                             # Let's send JSON message to Elastic, Filebeat or Logstash server
                             if Output == 'Metricbeat':
@@ -2655,7 +2655,7 @@ def TailPythonStyle(FilebeatConfigName, TargetFile, PatternMatch, MultilineSepar
                     # Removing \n at the end of thr readline() output
                     NewLine = re.sub('\n$', '', NewLine)
                     # New line has been written, let's store datetime and check for patterns
-                    SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+                    SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
                     
                     # We check if pattern is detected
                     if bool(re.search(PatternMatch, NewLine)):
@@ -2686,7 +2686,7 @@ def TailPythonStyle(FilebeatConfigName, TargetFile, PatternMatch, MultilineSepar
                         '')
                         
                         # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-                        JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSONFilebeat + CustomJSONToSend + '}'
+                        JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSONFilebeat + CustomJSONToSend + '}'
                         
                         # Let's send JSON message to Elastic, Filebeat or Logstash server
                         if Output == 'Metricbeat':
@@ -2717,7 +2717,7 @@ def CustomMetricExec(OSScript, ItemName, ComparisonTimer, Output):
     """
 
     # Generating current ELK timestamp for JSON message
-    SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+    SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
 
     # Gathering data from OS command
     OSCmdResult = subprocess.Popen(OSScript, shell=True, stdout=subprocess.PIPE).stdout
@@ -2734,7 +2734,7 @@ def CustomMetricExec(OSScript, ItemName, ComparisonTimer, Output):
             '\"system\":{\"custom\":{\"' + ItemName + '\":{\"name\":\"' + CurrLine[0] + '\",\"value\":\"' + EmptyString.join(CurrLine[1:]).replace('"','') + '\"}}}')
            
             # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
+            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
             
             # Adding JSON metrics values gathered from OS command
             JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -2778,7 +2778,7 @@ def PingPlotter(ComparisonTimer):
     for PingTarget in PingPlotterTargets.split(','):
         if len(PingTarget) != 0:
             # Generating current ELK timestamp for JSON message
-            SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+            SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
             
             # To move both fields to Parameter.conf file
             PingSamples = 5
@@ -2807,7 +2807,7 @@ def PingPlotter(ComparisonTimer):
                 '\"rtt_max\":' + str(ResultDict["rtt_max"]) + ',\"packet_duplicate_rate\":' + str(float(ResultDict["packet_duplicate_rate"]) / 100) + '}}')
                
                 # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-                JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
+                JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
                 
                 # Adding JSON metrics values gathered from OS command
                 JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -2832,7 +2832,7 @@ def PingPlotter(ComparisonTimer):
                 '\"system\":{\"pingplotter\":{\"destination\":\"' + PingTarget + '\",\"packet_loss_rate\":100,\"rtt_avg\":0,\"rtt_max\":0,\"packet_duplicate_rate\":0}}')
                
                 # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-                JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
+                JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
                 
                 # Adding JSON metrics values gathered from OS command
                 JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -2879,7 +2879,7 @@ def ErrptLog(ComparisonTimer):
                 ErrorLogMessage = ErrorLogMessage.read().decode()
                 
                 # Generating current ELK timestamp for JSON message
-                SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+                SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
                 
                 # Custom message
                 CustomJSONToSend = (''
@@ -2904,7 +2904,7 @@ def ErrptLog(ComparisonTimer):
                 '')
                 
                 # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-                JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSONFilebeat + ',' + CustomJSONToSend + '}'
+                JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSONFilebeat + ',' + CustomJSONToSend + '}'
                 
                 # Let's send JSON message to ELK Filebeat server
                 SendJSON(JSONToSend, 'Filebeat')
@@ -2929,7 +2929,7 @@ def SystemCoreAndCpu(ComparisonTimer):
     global LPARCPUMode
     
     # Generating current ELK timestamp for JSON message
-    SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+    SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
     
     # Gathering data from OS command for LPAR allocations
     CmdLine = 'lparstat -i | egrep "SMT|Online Virtual CPUs|Entitled Capacity" | head -3'
@@ -3070,7 +3070,7 @@ def SystemCoreAndCpu(ComparisonTimer):
     '\"pct\":' + CPUIOWaitPCTNorm + '}}}}')   
    
     # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
+    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
     
     # Adding JSON metrics values gathered from OS command
     JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -3125,7 +3125,7 @@ def SystemCoreAndCpu(ComparisonTimer):
     '}}')
    
     # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
+    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
     
     # Adding JSON metrics values gathered from OS command
     JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -3158,7 +3158,7 @@ def SystemFc(ComparisonTimer):
         # Removing empty lines
         if(len(FcCard) != 0):
             # Generating current ELK timestamp for JSON message
-            SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+            SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
 
             # Gathering data from OS command
             SystemFCCmd = 'fcstat ' + FcCard + ' | egrep -p "FC SCSI Traffic Statistics|FC SCSI Adapter Driver Information"'
@@ -3217,7 +3217,7 @@ def SystemFc(ComparisonTimer):
             '\"bytes\":' + CurrFcCardWriteBytes + '}}}')
 
             # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
+            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
             
             # Adding JSON metrics values gathered from OS command
             JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -3249,7 +3249,7 @@ def SystemNetwork(ComparisonTimer):
         # Removing empty lines
         if(len(NetworkCard) != 0):
             # Generating current ELK timestamp for JSON message
-            SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+            SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
 
             # Gathering data from OS command
             SystemNetworkCmd = 'entstat ' + NetworkCard + ' | egrep "Packets|Bytes|Errors" | head -4'
@@ -3291,7 +3291,7 @@ def SystemNetwork(ComparisonTimer):
 
             
             # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
+            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
             
             # Adding JSON metrics values gathered from OS command
             JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -3320,7 +3320,7 @@ def SystemLoad(ComparisonTimer):
     # SystemLoadThread = threading.currentThread()
 
     # Generating current ELK timestamp for JSON message
-    SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+    SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
 
     # Gathering data from OS command
     SystemLoadCmd = subprocess.Popen("uptime", shell=True, stdout=subprocess.PIPE).stdout
@@ -3355,7 +3355,7 @@ def SystemLoad(ComparisonTimer):
     '\"cores\":' + NumProcString + '}}')
     
     # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
+    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
     
     # Adding JSON metrics values gathered from OS command
     JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -3384,7 +3384,7 @@ def SystemMemory(ComparisonTimer):
     SystemMemoryThread = threading.currentThread()
 
     # Generating current ELK timestamp for JSON message
-    SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+    SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
 
     # Gathering data from OS command
     SystemMemory = subprocess.Popen('svmon -G -O unit=KB | egrep "memory|space"', shell=True, stdout=subprocess.PIPE).stdout
@@ -3541,7 +3541,7 @@ def SystemMemory(ComparisonTimer):
 
     
     # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
+    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
     
     # Adding JSON metrics values gathered from OS command
     JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -3565,7 +3565,7 @@ def SystemProcessSummary(ComparisonTimer):
         TODO: Describe the function, all vars and its content
     """
     # Generating current ELK timestamp for JSON message
-    SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+    SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
 
     # Gathering data from OS command
     SystemProcessSummary = subprocess.Popen("ps -ef -m -o status | awk '{print $NF}'", shell=True, stdout=subprocess.PIPE).stdout
@@ -3650,7 +3650,7 @@ def SystemProcessSummary(ComparisonTimer):
     '\"stopped\":' + StoppedPS + '}}}')
     
     # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
+    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
     
     # Adding JSON metrics values gathered from OS command
     JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -3699,7 +3699,7 @@ def SystemDiskIO(ComparisonTimer):
         SystemDiskIOCmd = 'iostat -D ' + str(SystemDiskIOStat) + ' ' + str(DiskSampleRate) + ' 1'
         
     # Generating current ELK timestamp for JSON message
-    SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+    SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
     
     # Gathering data for disks
     SystemDiskIOResultArray = subprocess.Popen(SystemDiskIOCmd, shell=True, stdout=subprocess.PIPE).stdout
@@ -3873,7 +3873,7 @@ def SystemDiskIO(ComparisonTimer):
         '\"io\":{\"time\":' + IoAwait + '}}}')
         
         # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-        JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
+        JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
         
         # Adding JSON metrics values gathered from OS command
         JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -3904,7 +3904,7 @@ def SystemFilesystemAndFstat(ComparisonTimer):
     # SystemFilesystemAndFstatThread = threading.currentThread()
 
     # Generating current ELK timestamp for JSON message
-    SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+    SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
 
     # Gathering disk list from OS command
     SystemFilesystemAndFstat = subprocess.Popen('df -k | egrep -v "(Filesystem|:|/proc|/aha)"', shell=True, stdout=subprocess.PIPE).stdout
@@ -3972,7 +3972,7 @@ def SystemFilesystemAndFstat(ComparisonTimer):
             '')
             
             # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
+            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
             
             # Adding JSON metrics values gathered from OS command
             JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -4003,7 +4003,7 @@ def SystemFilesystemAndFstat(ComparisonTimer):
     '\"total_files\":' + FSTotalFiles + '}}')
     
     # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
+    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
     
     # Adding JSON metrics values gathered from OS command
     JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -4031,7 +4031,7 @@ def SystemHPMStat(ComparisonTimer):
     SystemHPMStatThread = threading.currentThread()
     
     # Generating current ELK timestamp for JSON message
-    SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+    SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
 
     # Defining which values we want to take from output for General group
     # If some fields are added or remove, all the code has to be reviewed as positions will change...
@@ -4046,7 +4046,7 @@ def SystemHPMStat(ComparisonTimer):
             # Gathering data from OS command
             SystemHPMGrpGeneralCmd = 'hpmstat -m General:uk | egrep -w "' + HPMStatInclude + '"'
             
-            SystemHPMGrpGeneral = subprocess.Popen(SystemHPMGrpGeneralCmd, shell=True, stdout=subprocess.PIPE).stdout
+            SystemHPMGrpGeneral = subprocess.Popen(SystemHPMGrpGeneralCmd, shell=True, stdout=subprocess.PIPE, stderr = devnull).stdout
             SystemHPMGrpGeneral = SystemHPMGrpGeneral.read().decode().split('\n')
             
             CyclePerInst = SystemHPMGrpGeneral[0].split()[-1]
@@ -4064,7 +4064,7 @@ def SystemHPMStat(ComparisonTimer):
             # Gathering data from OS command
             SystemHPMGrpGeneralCmd = 'hpmstat -m General:uk | egrep -w "' + HPMStatInclude + '"'
             
-            SystemHPMGrpGeneral = subprocess.Popen(SystemHPMGrpGeneralCmd, shell=True, stdout=subprocess.PIPE).stdout
+            SystemHPMGrpGeneral = subprocess.Popen(SystemHPMGrpGeneralCmd, shell=True, stdout=subprocess.PIPE, stderr = devnull).stdout
             SystemHPMGrpGeneral = SystemHPMGrpGeneral.read().decode().split('\n')
             
             CyclePerInst = SystemHPMGrpGeneral[0].split()[-1]
@@ -4081,7 +4081,7 @@ def SystemHPMStat(ComparisonTimer):
             # Gathering data from OS command
             SystemHPMGrpGeneralCmd = 'hpmstat -m General:uk | egrep -w "' + HPMStatInclude + '"'
 
-            SystemHPMGrpGeneral = subprocess.Popen(SystemHPMGrpGeneralCmd, shell=True, stdout=subprocess.PIPE).stdout
+            SystemHPMGrpGeneral = subprocess.Popen(SystemHPMGrpGeneralCmd, shell=True, stdout=subprocess.PIPE, stderr = devnull).stdout
             SystemHPMGrpGeneral = SystemHPMGrpGeneral.read().decode().split('\n')
 
             CyclePerInst = SystemHPMGrpGeneral[0].split()[-2]
@@ -4187,7 +4187,7 @@ def SystemHPMStat(ComparisonTimer):
     '\"system\":{\"hpmstat\":' + FinalString + '}')
     
     # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
+    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
     
     # Adding JSON metrics values gathered from OS command
     JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -4213,7 +4213,7 @@ def SystemHypervisor(ComparisonTimer):
     """
 
     # Generating current ELK timestamp for JSON message
-    SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+    SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
     
     # Defining which values we want to take from output
     # If some fields are added or remove, all the code has to be reviewed as positions will change...
@@ -4258,7 +4258,7 @@ def SystemHypervisor(ComparisonTimer):
     '\"system\":{\"hypervisor\":{' + FinalStringConcat + '}}')
     
     # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
+    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
     
     # Adding JSON metrics values gathered from OS command
     JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -4287,7 +4287,7 @@ def SystemProcess(ComparisonTimer):
     SystemProcessThread = threading.currentThread()
 
     # Generating current ELK timestamp for JSON message
-    SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+    SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
 
     # Checking if a limit is set for Processes analysis
     if TopProcesses != 0:
@@ -4547,7 +4547,7 @@ def SystemProcess(ComparisonTimer):
                
                
                 # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-                JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
+                JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
                 
                 # Adding JSON metrics values gathered from OS command
                 JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -4572,7 +4572,7 @@ def SystemSocketSummary(ComparisonTimer):
     """
             
     # Generating current ELK timestamp for JSON message
-    SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+    SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
 
     # Gathering data from OS command for SystemSocketSummarySummary
     SystemSocketSummary = subprocess.Popen("netstat -an -f inet | tail -n +3", shell=True, stdout=subprocess.PIPE).stdout
@@ -4697,7 +4697,7 @@ def SystemSocketSummary(ComparisonTimer):
     '}}')
     
     # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
+    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
     
     # Adding JSON metrics values gathered from OS command
     JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -4725,7 +4725,7 @@ def SystemSocket(ComparisonTimer):
     SystemSocketThread = threading.currentThread()
             
     # Generating current ELK timestamp for JSON message
-    SeqIdTimestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+    SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
 
     # Gathering data from OS command for SystemSocketSummarySummary
     SystemSocketSummary = subprocess.Popen("netstat -an -f inet | tail -n +3", shell=True, stdout=subprocess.PIPE).stdout
@@ -5069,7 +5069,7 @@ def SystemSocket(ComparisonTimer):
                 '}')
                 
                 # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-                JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + '\",' + StaticJSON
+                JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
                 
                 # Adding JSON metrics values gathered from OS command
                 JSONToSend = JSONToSend + ',' + JSONToSendValues

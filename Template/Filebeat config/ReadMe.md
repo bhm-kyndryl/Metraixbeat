@@ -38,10 +38,10 @@
 			"It is my test string"
 			
 		You can use by example the following REGEX to match " test " 
-			^.* test \w*$
+			.* test \w*$
 			
 		Then, escape "\" characters and add it into config file
-			"Patterns": "^.* test \\w*$"
+			"Patterns": ".* test \\w*$"
 		
 	### Multiline Separator to detect the end of the entrie in a file, if different than "\n"
 	    If traditional log file ending with "\n", then let this field empty ("")

@@ -5,7 +5,7 @@ __author__ = "Benjamin Herson-Macarel"
 #__copyright__ = ""
 __credits__ = ["Who", "wants", "to", "be", "added", "???"]
 __license__ = "GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007"
-__version__ = "1.21.10"
+__version__ = "1.21.12"
 __maintainer__ = "Benjamin Herson-Macarel"
 __email__ = "benjamin.herson-macarel-isc.france@ibm.com"
 __status__ = "Stable"
@@ -101,6 +101,7 @@ def LoadDaemonConfig():
     global Tagz
     global Labels
     global BulkMaxSize
+    global NMONSeq
     
     # Checking if Configuration file exists
     if os.path.exists(ConfigFilePath):
@@ -145,6 +146,9 @@ def LoadDaemonConfig():
                 LogstashServersFailed = []
                 ElasticIndexName = JSONValues["ElasticIndexName"]
                 FilebeatIndexName = JSONValues["FilebeatIndexName"]
+                
+                # Setting NMON sequence counter to 0
+                NMONSeq = 0
 
                 # Script functional variables
                 # Time to wait before refreshing tail's processes status (in seconds)
@@ -3401,16 +3405,16 @@ def SystemMemory(ComparisonTimer):
     # print('PagingLine', PagingLine)
 
     # Get MEMORY usage informations and convert to B
-    RealMemTotal = int(MemoryLine[1]) * 1024
-    RealMemFree = int(MemoryLine[3]) * 1024
-    RealMemUsed = int(MemoryLine[2]) * 1024    
+    RealMemTotal = int(MemoryLine[1]) * 1000
+    RealMemFree = int(MemoryLine[3]) * 1000
+    RealMemUsed = int(MemoryLine[2]) * 1000    
 
     # Calculating percentage for memory
     # BUG - Removed ' * 100 ' for ELK correct formating but strange...
     RealMemUsedPCT = RealMemUsed / RealMemTotal
 
     # Custom metrics
-    VirtualMemUsed = int(MemoryLine[5]) * 1024
+    VirtualMemUsed = int(MemoryLine[5]) * 1000
     VirtualMemUsedPCT = VirtualMemUsed / RealMemTotal
     VirtualMemFreePCT = 1 - VirtualMemUsedPCT
     VirtualMemFree = VirtualMemUsedPCT * RealMemTotal
@@ -3418,8 +3422,8 @@ def SystemMemory(ComparisonTimer):
     CacheMemUsedPCT = CacheMemUsed / RealMemTotal
 
     # Get SWAP usage informations and convert MB to B
-    TotalSwapBytes = int(PagingLine[2]) * 1024
-    UsedSwapBytes = int(PagingLine[3]) * 1024
+    TotalSwapBytes = int(PagingLine[2]) * 1000
+    UsedSwapBytes = int(PagingLine[3]) * 1000
     
     FreeSwapBytes = TotalSwapBytes - UsedSwapBytes
 
@@ -3732,6 +3736,12 @@ def SystemDiskIO(ComparisonTimer):
         
         # Setting disk name
         DiskName = NameSplitedLine[0]
+        
+        # Getting disk size
+        DiskIOSizeCmd = 'bootinfo -s ' + str(DiskName)
+        DiskIOSize = subprocess.Popen(DiskIOSizeCmd, shell=True, stdout=subprocess.PIPE).stdout
+        DiskIOSize = DiskIOSize.read().decode().split()
+        DiskIOSize = int(float(str(DiskIOSize[0])) * 1000 * 1000)
 
         # Gathering data for write counters
         DiskWriteCount = WriteSplitedLine[0]
@@ -3742,17 +3752,17 @@ def SystemDiskIO(ComparisonTimer):
         if DiskWriteBytes.endswith("K"):
             
             # DiskWriteBytes = DiskWriteBytes.replace(".", "")
-            DiskWriteBytes = float(DiskWriteBytes.replace("K", "")) * 1024
+            DiskWriteBytes = float(DiskWriteBytes.replace("K", "")) * 1000
             pass
         elif DiskWriteBytes.endswith("M"):
             # DiskWriteBytes = DiskWriteBytes.replace(".", "")
             # DiskWriteBytes = DiskWriteBytes.replace("M", "") + "00000"
-            DiskWriteBytes = float(DiskWriteBytes.replace("M", "")) * 1024 * 1024
+            DiskWriteBytes = float(DiskWriteBytes.replace("M", "")) * 1000 * 1000
             pass
         elif DiskWriteBytes.endswith("G"):
             # DiskWriteBytes = DiskWriteBytes.replace(".", "")
             # DiskWriteBytes = DiskWriteBytes.replace("G", "") + "00000000"
-            DiskWriteBytes = float(DiskWriteBytes.replace("G", "")) * 1024 * 1024 * 1024
+            DiskWriteBytes = float(DiskWriteBytes.replace("G", "")) * 1000 * 1000 * 1000
             pass
 
         # Gathering data for write counters
@@ -3764,17 +3774,17 @@ def SystemDiskIO(ComparisonTimer):
         if DiskReadBytes.endswith("K"):
             # DiskReadBytes = DiskReadBytes.replace(".", "")
             # DiskReadBytes = DiskReadBytes.replace("K", "") + "00"
-            DiskReadBytes = float(DiskReadBytes.replace("K", "")) * 1024
+            DiskReadBytes = float(DiskReadBytes.replace("K", "")) * 1000
             pass
         elif DiskReadBytes.endswith("M"):
             # DiskReadBytes = DiskReadBytes.replace(".", "")
             # DiskReadBytes = DiskReadBytes.replace("M", "") + "00000"
-            DiskReadBytes = float(DiskReadBytes.replace("M", "")) * 1024 * 1024
+            DiskReadBytes = float(DiskReadBytes.replace("M", "")) * 1000 * 1000
             pass
         elif DiskReadBytes.endswith("G"):
             # DiskReadBytes = DiskReadBytes.replace(".", "")
             # DiskReadBytes = DiskReadBytes.replace("G", "") + "00000000"
-            DiskReadBytes = float(DiskReadBytes.replace("G", "")) * 1024 * 1024 * 1024
+            DiskReadBytes = float(DiskReadBytes.replace("G", "")) * 1000 * 1000 * 1000
             pass
 
         # Gathering IO Queue size and busy counters
@@ -3837,6 +3847,7 @@ def SystemDiskIO(ComparisonTimer):
         DiskWriteRequestMergePerSec = str(DiskWriteRequestMergePerSec)
         DiskReadAwait = str(DiskReadAwait)
         DiskReadRequestMergePerSec = str(DiskReadRequestMergePerSec)
+        DiskIOSize = str(DiskIOSize)
 
         # Let's construct JSON output for SystemDiskIO (ELK 7.5.0)       
         JSONToSendValues = (''
@@ -3864,6 +3875,7 @@ def SystemDiskIO(ComparisonTimer):
         '\"request\":{'
         '\"avg_size\":' + IORequestAVGSize + '}},'
         '\"name\":\"' + DiskName + '\",'
+        '\"size\":\"' + DiskIOSize + '\",'
         '\"read\":{'
         '\"bytes\":' + DiskReadBytes + ','
         '\"count\":' + DiskReadCount + ','
@@ -3929,9 +3941,9 @@ def SystemFilesystemAndFstat(ComparisonTimer):
             # Filling all necessary values
             FSDeviceName = SplitFSLine[0]
             FSNameShort = FSDeviceName.replace('/','')
-            FSAvailable = int(SplitFSLine[2]) * 1024
+            FSAvailable = int(SplitFSLine[2]) * 1000
             FSUsedPCT = int(SplitFSLine[3].replace('%','')) / 100
-            FSTotal = int(SplitFSLine[1]) * 1024
+            FSTotal = int(SplitFSLine[1]) * 1000
             FSUsed = FSTotal - FSAvailable
             FSMountPoint = SplitFSLine[6]
             InodeUsed = int(SplitFSLine[4])
@@ -4343,10 +4355,10 @@ def SystemProcess(ComparisonTimer):
                 # For other processes
                 ProcessMemorySize = CPUProcessLine[5]
                 # Converting KB in B
-                ProcessMemorySize = int(ProcessMemorySize) * 1024
+                ProcessMemorySize = int(ProcessMemorySize) * 1000
                 ProcessMemoryRssBytes = CPUProcessLine[6]
                 # Converting KB in B
-                ProcessMemoryRssBytes = int(ProcessMemoryRssBytes) * 1024
+                ProcessMemoryRssBytes = int(ProcessMemoryRssBytes) * 1000
                 ProcessMemoryRssPCT = CPUProcessLine[7]
                 # Formating pct to ELK format
                 ProcessMemoryRssPCT = float(ProcessMemoryRssPCT) / 100
@@ -5350,7 +5362,6 @@ def main(argv):
         # Sleep for specified time
         time.sleep(CycleSleepTime)
 
-
 # Script entry point
 if __name__ == "__main__":
 
@@ -5416,4 +5427,4 @@ if __name__ == "__main__":
 
     # Start the daemon main loop
     main(sys.argv[1:])
-    
+

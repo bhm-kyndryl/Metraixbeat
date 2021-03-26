@@ -36,7 +36,11 @@ style="margin-right: 10px;"
 	* Performance of the daemon is overall good without much impact on system but sample rate is (by default) lower than LINUX metricbeat
     * Filebeat like plugins and custom script results easy integration
 
-
+### Dont hesitate to contact me (Bugs, improvements, thoughts, ...) !
+	Email: metraixbeat@wwpdl.vnet.ibm.com
+	I need your feedbacks to improve this tool, I will do my best to help you !
+	I'm mainly concerned about bugs, which you can have in your own AIX environment, and that I didn't catch...
+	
 ### Fully based on Python3 
 	Tested only with 3.7 and 3.8 but should work with other Python3 versions
 	Compatible with AIX 5.3/6.1/7.1/7.2 ( that's to say Python 3.x is installed)

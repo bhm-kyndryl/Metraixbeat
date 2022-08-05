@@ -1,0 +1,75 @@
+{
+    "StaticJSON": {
+        "tags": null,
+        "rollup": {
+            "tagz": null,
+            "hostname": null
+        },
+        "agent": {
+            "version": null,
+            "type": "metricbeat",
+            "ephemeral_id": null,
+            "hostname": null,
+            "id": null
+        },
+        "host": {
+            "name": null,
+            "hostname": null,
+            "architecture": null,
+            "id": null,
+            "containerized": "false",
+            "os": {
+                "platform": "AIX",
+                "version": null,
+                "family": null,
+                "name": "AIX",
+                "kernel": null,
+                "codename": "AIX"
+            }
+        },
+        "ecs": {
+            "version": null
+        }
+    },
+    "StaticJSONFilebeat": {
+        "tags": null,
+        "rollup": {
+            "tagz": {
+                "terms": {
+                    "value": null
+                }
+            },
+            "hostname": {
+                "terms": {
+                    "value": null
+                }
+            }
+        },
+        "agent": {
+            "version": null,
+            "type": "filebeat",
+            "ephemeral_id": null,
+            "hostname": null,
+            "id": null
+        },
+        "host": {
+            "name": null,
+            "hostname": null,
+            "architecture": null,
+            "id": null,
+            "containerized": "false",
+            "os": {
+                "platform": "AIX",
+                "version": null,
+                "family": null,
+                "name": "AIX",
+                "kernel": null,
+                "codename": "AIX"
+            }
+        },
+        "ecs": {
+            "version": null
+        },
+        "labels": {}
+    }
+}

@@ -1,0 +1,14 @@
+{
+    "service": {
+        "type": null
+    },
+    "event": {
+        "module": null,
+        "duration": null,
+        "dataset": null
+    },
+    "metricset": {
+        "name": null,
+        "period": 1
+    }
+}

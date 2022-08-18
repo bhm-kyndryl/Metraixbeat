@@ -38,8 +38,8 @@ def StartLogging():
     values.StartupLogFile = values.LogFilePath + "Metraixbeat.Startup.log"
     values.StartupLogFileLast = values.LogFilePath + "Metraixbeat.Startup.log.last"
     
-    logging.info('LogFilePath: ', values.LogFilePath)
-    logging.info('StartupLogFile: ', values.StartupLogFile)
+    print('LogFilePath: ', values.LogFilePath)
+    print('StartupLogFile: ', values.StartupLogFile)
     
     # sys.exit(2)
     
@@ -129,7 +129,7 @@ def main(argv):
     for opt, arg in opts:
         # Case of help
         if opt == '-h':
-            logging.info('Usage:')
+            print('Usage:')
             logging.error('metraixbeat -c <Parameters.conf file path> -l <Logs directory path>')
             sys.exit()
         elif opt in ("-c", "--ConfigFilePath"):
@@ -139,7 +139,7 @@ def main(argv):
             
     # Checking given parameters
     if not values.ConfigFilePath or not values.LogFilePath:
-        logging.info('Usage:')
+        print('Usage:')
         logging.error('metraixbeat -c <Parameters.conf file path> -l <Logs directory path>')
         sys.exit()
 

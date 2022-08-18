@@ -9,43 +9,10 @@ from time import time
 import traceback
 from samples import CompareTimer
 from utils import ErrptLog, GenerateDynamicJson, PingPlotter, SendJSON
-from values import( 
-    DiskSampleRate,
-    ErrptLogWaitValue,
-    FcCards,
-    HdiskRestricted,
-    IfSystemHPMStatEnable,
-    IfSystemHypervisorEnable,
-    IfVIOS,
-    LPARArch,
-    NetworkCards,
-    NumProc,
-    NumProcString,
-    PingPlotterWaitValue,
-    StaticJSON, 
-    SystemCoreAndCpuWaitValue, 
-    SystemDiskIOWaitValue, 
-    SystemFcWaitValue,
-    SystemFilesystemAndFstatWaitValue,
-    SystemHPMStatWaitValue,
-    SystemHypervisorWaitValue, 
-    SystemLoadWaitValue, 
-    SystemMemoryWaitValue, 
-    SystemNetworkWaitValue, 
-    SystemProcessSummaryWaitValue, 
-    SystemProcessWaitValue, 
-    SystemSocketSummaryWaitValue, 
-    SystemSocketWaitValue, 
-    devnull,
-    SystemDiskIOThread,
-    CustomMetricsConfigsArray,
-    CrashDumpDaemon,
-    SystemSocketThread,
-    SystemHPMStatThread,
-    SystemMemoryThread
-)
 
-import values
+
+import values 
+
 
 def WorkOnMetrics():
     """ This function will check execution timers and, if necessary, execute item work.
@@ -61,7 +28,8 @@ def WorkOnMetrics():
     
     try:
         # Checking timer for SystemCoreAndCpu
-        ComparisonTimer = CompareTimer("SystemCoreAndCpu", SystemCoreAndCpuWaitValue)
+        print(f'test value funciton work on metric   {values.SystemCoreAndCpuWaitValue}')
+        ComparisonTimer = CompareTimer("SystemCoreAndCpu", values.SystemCoreAndCpuWaitValue)
         if ComparisonTimer != devnull:
             SystemCoreAndCpu(ComparisonTimer)
     except Exception as e:

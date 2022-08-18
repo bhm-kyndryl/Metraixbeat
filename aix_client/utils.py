@@ -77,7 +77,7 @@ def GetLPARInformations():
     
     # Get LPAR AIX OS Version
     values.AIXVersion =  subprocess.Popen("oslevel -s", shell=True, stdout=subprocess.PIPE).stdout
-    print(values.AIXVersion)
+    #print(values.AIXVersion)
     values.AIXVersion =  values.AIXVersion.read().decode().replace("\n","")
     
     # Checking if LPAR or VIOS

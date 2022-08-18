@@ -126,6 +126,7 @@ def LoadDaemonConfig():
                 values.SystemNetworkWaitValue = int(JSONValues["SystemNetworkWaitValue"])
                 values.SystemCoreAndCpuWaitValue = int(JSONValues["SystemCoreAndCpuWaitValue"])
                 
+                print(f'function load config  value  {values.SystemCoreAndCpuWaitValue}')
                 # Loading PingPlotter targets and configuration values
                 values.PingPlotterTargets = JSONValues["PingPlotterTargets"]
                 values.PingPlotterWaitValue = int(JSONValues["PingPlotterWaitValue"])
@@ -681,7 +682,7 @@ def CompareTimer(TimedTopic, MetricsWaitValue, CustomMetric = ''):
     
     # Get current timestamp
     CurrentTimer = datetime.datetime.now()
-    MetricsWaitValue = MetricsWaitValue
+    #MetricsWaitValue = int(MetricsWaitValue)
     # Try/Catch to avoid errors on non defined dictionary entrie / First execution
     try:
         # Dictionary entrie is not empty

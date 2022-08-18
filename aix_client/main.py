@@ -38,8 +38,8 @@ def StartLogging():
     values.StartupLogFile = values.LogFilePath + "Metraixbeat.Startup.log"
     values.StartupLogFileLast = values.LogFilePath + "Metraixbeat.Startup.log.last"
     
-    # print('LogFilePath: ', LogFilePath)
-    # print('StartupLogFile: ', StartupLogFile)
+    logging.info('LogFilePath: ', values.LogFilePath)
+    logging.info('StartupLogFile: ', values.StartupLogFile)
     
     # sys.exit(2)
     
@@ -94,10 +94,7 @@ def main(argv):
     """    
    
     # Define null var
-    values.devnull = subprocess.DEVNULL
-    # init values from  LPAR AIX OS Version
-    values.AIXVersion =  subprocess.Popen("oslevel -s", shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-    values.AIXVersion =  values.AIXVersion.read().decode().replace("\n","")
+    values.devnull = subprocess.DEVNULL 
     # Defining LPAR Name
     values.LPARName = socket.gethostname()   
 
@@ -132,7 +129,7 @@ def main(argv):
     for opt, arg in opts:
         # Case of help
         if opt == '-h':
-            print('Usage:')
+            logging.info('Usage:')
             logging.error('metraixbeat -c <Parameters.conf file path> -l <Logs directory path>')
             sys.exit()
         elif opt in ("-c", "--ConfigFilePath"):
@@ -142,7 +139,7 @@ def main(argv):
             
     # Checking given parameters
     if not values.ConfigFilePath or not values.LogFilePath:
-        print('Usage:')
+        logging.info('Usage:')
         logging.error('metraixbeat -c <Parameters.conf file path> -l <Logs directory path>')
         sys.exit()
 
@@ -266,4 +263,6 @@ if __name__ == "__main__":
 
     # Start the daemon main loop
     main(sys.argv[1:])
+    
+    #/opt/freeware/bin/python3 main.py -c /etc/metraixbeat/Parameters.conf -l /var/log/metraixbeat/
 

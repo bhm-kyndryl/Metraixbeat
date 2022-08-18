@@ -45,8 +45,7 @@ def GetLPARInformations():
         Define the number of CPU threads available on LPAR.
     """
 
-    # FcCards list need to be formated before being used
- 
+  
 
     # Checking if LPAR name contains DNS suffix. Adding if not
     # Checking first if var FQDN is not null
@@ -76,7 +75,10 @@ def GetLPARInformations():
     # Log
     logging.info(" - Checking LPAR Architecture... Done !")
     
-
+    # Get LPAR AIX OS Version
+    values.AIXVersion =  subprocess.Popen("oslevel -s", shell=True, stdout=subprocess.PIPE).stdout
+    print(values.AIXVersion)
+    values.AIXVersion =  values.AIXVersion.read().decode().replace("\n","")
     
     # Checking if LPAR or VIOS
     if os.path.exists("/usr/ios/cli/ioscli"):
@@ -89,8 +91,8 @@ def GetLPARInformations():
     
     # Get current SMT mode  
     LPARSMTModeCmdLine = "smtctl | grep has | awk '{print $3}' | head -1"    
-    LPARSMTMode =  subprocess.Popen(LPARSMTModeCmdLine, shell=True, stdout=subprocess.PIPE).stdout
-    LPARSMTMode =  LPARSMTMode.read().decode().replace("\n","")
+    values.LPARSMTMode =  subprocess.Popen(LPARSMTModeCmdLine, shell=True, stdout=subprocess.PIPE).stdout
+    values.LPARSMTMode =  values.LPARSMTMode.read().decode().replace("\n","")
     
     # Defining config path from ConfigFilePath
     ConfigPathtmp = values.ConfigFilePath.split('/').pop()
@@ -105,9 +107,9 @@ def GetLPARInformations():
         # Get LPAR Unique ID
         # IMPROVEMENT / Can be converted into python style
         LPARRndIDCmd = "cat " + RandomIDFile + " | grep LPARRndID | awk '{print $2}'"
-        LPARRndID = subprocess.Popen(LPARRndIDCmd, shell=True, stdout=subprocess.PIPE).stdout
-        LPARRndID = LPARRndID.read().decode().replace('\r','')
-        LPARRndID = LPARRndID.replace('\n','')
+        values.LPARRndID = subprocess.Popen(LPARRndIDCmd, shell=True, stdout=subprocess.PIPE).stdout
+        values.LPARRndID = values.LPARRndID.read().decode().replace('\r','')
+        values.LPARRndID = values.LPARRndID.replace('\n','')
         # Get LPAR ephemeral ID
         # IMPROVEMENT / Can be converted into python style
         AgentIDCmd = "cat " + RandomIDFile + " | grep AgentID | awk '{print $2}'"
@@ -244,9 +246,9 @@ def GenerateStaticJSON():
 
     # Checking if LPAR is a VIOS
     if values.IfVIOS:
-        OSFamily = 'VIOS'
+        values.OSFamily = 'VIOS'
     else:
-        OSFamily = 'AIX'
+        values.OSFamily = 'AIX'
 
     # Define Host JSON for metricbeat
  

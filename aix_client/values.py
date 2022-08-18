@@ -17,34 +17,34 @@ BypassProxy= None
 FQDN = None
 Tags = []
 Labels = []
-BulkMaxSize = None
-TailRefreshValue = None
-CycleSleepTime = None
-DiskSampleRate = None
-TopProcesses = None
+BulkMaxSize = 0
+TailRefreshValue = 0
+CycleSleepTime = 0
+DiskSampleRate = 0
+TopProcesses = 0
 PingPlotterTargets = None
-PingSamples = None
+PingSamples = 0
 PingTimeout = None
 IfSystemHypervisorEnable = None
 IfSystemHPMStatEnable = None
 EntRestricted = None
 FcsRestricted = None
 HdiskRestricted = None
-SystemSocketWaitValue = None
-PingPlotterWaitValue = None
-ErrptLogWaitValue = None
-SystemHypervisorWaitValue = None
-SystemProcessWaitValue = None
-SystemSocketSummaryWaitValue = None
-SystemFilesystemAndFstatWaitValue = None
-SystemDiskIOWaitValue = None
-SystemProcessSummaryWaitValue = None
-SystemHPMStatWaitValue = None
-SystemLoadWaitValue = None
-SystemMemoryWaitValue = None
-SystemFcWaitValue = None
-SystemNetworkWaitValue = None
-SystemCoreAndCpuWaitValue = None
+SystemSocketWaitValue = 0
+PingPlotterWaitValue = 0
+ErrptLogWaitValue = 0
+SystemHypervisorWaitValue = 0
+SystemProcessWaitValue = 0
+SystemSocketSummaryWaitValue = 0
+SystemFilesystemAndFstatWaitValue = 0
+SystemDiskIOWaitValue = 0
+SystemProcessSummaryWaitValue = 0
+SystemHPMStatWaitValue = 0
+SystemLoadWaitValue = 0
+SystemMemoryWaitValue = 0
+SystemFcWaitValue = 0
+SystemNetworkWaitValue = 0
+SystemCoreAndCpuWaitValue = 0
 
 
 # Defining arrays for ELK servers follow-up
@@ -86,7 +86,7 @@ LPARName = None
 LPARSMTMode = None
 LPARArch = None
 LPARHost = None
-AIXVersion = ''
+AIXVersion = None
 LPARRndID = None
 AgentID = None
 NetworkCards = []
@@ -95,7 +95,7 @@ FcCards = []
 FcCards = []
 NumProc = None
 NumProcString = None
-IfVIOS = None
+IfVIOS = False
 
 # Switching FilebeatConfigsArray, TargetFileCurrentPosArray and TailStateArray dictionary for follow up purpose
 TailStateArray = []
@@ -118,7 +118,7 @@ PingPlotterThread = None
 
 # Define variables for the function main
 devnull = None
-ExecutionTimers = {}
+ExecutionTimers = []
 # TargetFileMTimeCountArray fro the function main
 SystemProcessThread = None
 SystemSocketThread = None
@@ -137,4 +137,4 @@ AllLogstashServersFailedDate = None
 
 # Sharing TailStateArray and TargetFileCurrentPosArray with other threads
 
-global LastErrpt
+LastErrpt = None

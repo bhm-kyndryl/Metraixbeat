@@ -681,7 +681,7 @@ def CompareTimer(TimedTopic, MetricsWaitValue, CustomMetric = ''):
     
     # Get current timestamp
     CurrentTimer = datetime.datetime.now()
-
+    MetricsWaitValue = MetricsWaitValue
     # Try/Catch to avoid errors on non defined dictionary entrie / First execution
     try:
         # Dictionary entrie is not empty

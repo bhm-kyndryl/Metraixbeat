@@ -10,7 +10,7 @@ import traceback
 from samples import CompareTimer
 from utils import ErrptLog, GenerateDynamicJson, PingPlotter, SendJSON
 
-
+# import global vars
 import values 
 
 
@@ -30,12 +30,12 @@ def WorkOnMetrics():
         # Checking timer for SystemCoreAndCpu
         print(f'test value funciton work on metric   {values.SystemCoreAndCpuWaitValue}')
         ComparisonTimer = CompareTimer("SystemCoreAndCpu", values.SystemCoreAndCpuWaitValue)
-        if ComparisonTimer != devnull:
+        if ComparisonTimer != values.devnull:
             SystemCoreAndCpu(ComparisonTimer)
     except Exception as e:
         # Metricset has crashed
         # Creating the crash dump file and filling it with crash dump data
-        with open(CrashDumpDaemon, 'a') as f:
+        with open(values.CrashDumpDaemon, 'a') as f:
             f.write('\n\n')
             f.write(str(datetime.datetime.now()))
             f.write(':\n')
@@ -44,8 +44,8 @@ def WorkOnMetrics():
             f.write('\n')
 
         # Print and log error stack for debug purpose
-        logging.info('\n Metraixbeat encountered an error ! See ' + CrashDumpDaemon + ' for more informations\n')
-        print('\n Metraixbeat encountered an error ! See ', CrashDumpDaemon, ' for more informations\n')
+        logging.info('\n Metraixbeat encountered an error ! See ' + values.CrashDumpDaemon + ' for more informations\n')
+        print('\n Metraixbeat encountered an error ! See ', values.CrashDumpDaemon, ' for more informations\n')
         # traceback.print_exc()
         
         # Exiting
@@ -53,13 +53,13 @@ def WorkOnMetrics():
         
     try:
         # Checking timer for ErrptLog
-        ComparisonTimer = CompareTimer("ErrptLog", ErrptLogWaitValue)
-        if ComparisonTimer != devnull:
+        ComparisonTimer = CompareTimer("ErrptLog", values.ErrptLogWaitValue)
+        if ComparisonTimer != values.devnull:
             ErrptLog(ComparisonTimer)
     except Exception as e:
         # Metricset has crashed
         # Creating the crash dump file and filling it with crash dump data
-        with open(CrashDumpDaemon, 'a') as f:
+        with open(values.CrashDumpDaemon, 'a') as f:
             f.write('\n\n')
             f.write(str(datetime.datetime.now()))
             f.write(':\n')
@@ -68,19 +68,19 @@ def WorkOnMetrics():
             f.write('\n')
 
         # Print and log error stack for debug purpose
-        logging.info('\n Metraixbeat encountered an error ! See ' + CrashDumpDaemon + ' for more informations\n')
-        print('\n Metraixbeat encountered an error ! See ', CrashDumpDaemon, ' for more informations\n')
+        logging.info('\n Metraixbeat encountered an error ! See ' + values.CrashDumpDaemon + ' for more informations\n')
+        print('\n Metraixbeat encountered an error ! See ', values.CrashDumpDaemon, ' for more informations\n')
         # traceback.print_exc()
     
     try:
         # Checking timer for SystemLoad
-        ComparisonTimer = CompareTimer("SystemLoad", SystemLoadWaitValue)
-        if ComparisonTimer != devnull:
+        ComparisonTimer = CompareTimer("SystemLoad", values.SystemLoadWaitValue)
+        if ComparisonTimer != values.devnull:
             SystemLoad(ComparisonTimer)
     except Exception as e:
         # Metricset has crashed
         # Creating the crash dump file and filling it with crash dump data
-        with open(CrashDumpDaemon, 'a') as f:
+        with open(values.CrashDumpDaemon, 'a') as f:
             f.write('\n\n')
             f.write(str(datetime.datetime.now()))
             f.write(':\n')
@@ -89,8 +89,8 @@ def WorkOnMetrics():
             f.write('\n')
 
         # Print and log error stack for debug purpose
-        logging.info('\n Metraixbeat encountered an error ! See ' + CrashDumpDaemon + ' for more informations\n')
-        print('\n Metraixbeat encountered an error ! See ', CrashDumpDaemon, ' for more informations\n')
+        logging.info('\n Metraixbeat encountered an error ! See ' + values.CrashDumpDaemon + ' for more informations\n')
+        print('\n Metraixbeat encountered an error ! See ', values.CrashDumpDaemon, ' for more informations\n')
         # traceback.print_exc()
         
         # Exiting
@@ -98,14 +98,14 @@ def WorkOnMetrics():
     
     try:
         # Checking timer for SystemMemory
-        ComparisonTimer = CompareTimer("SystemMemory", SystemMemoryWaitValue)
-        if (ComparisonTimer != devnull) and (SystemMemoryThread.is_alive() != True):
+        ComparisonTimer = CompareTimer("SystemMemory", values.SystemMemoryWaitValue)
+        if (ComparisonTimer != values.devnull) and (SystemMemoryThread.is_alive() != True):
             SystemMemoryThread = threading.Thread(target=SystemMemory, args=(ComparisonTimer,))
             SystemMemoryThread.start()
     except Exception as e:
         # Metricset has crashed
         # Creating the crash dump file and filling it with crash dump data
-        with open(CrashDumpDaemon, 'a') as f:
+        with open(values.CrashDumpDaemon, 'a') as f:
             f.write('\n\n')
             f.write(str(datetime.datetime.now()))
             f.write(':\n')
@@ -114,8 +114,8 @@ def WorkOnMetrics():
             f.write('\n')
 
         # Print and log error stack for debug purpose
-        logging.info('\n Metraixbeat encountered an error ! See ' + CrashDumpDaemon + ' for more informations\n')
-        print('\n Metraixbeat encountered an error ! See ', CrashDumpDaemon, ' for more informations\n')
+        logging.info('\n Metraixbeat encountered an error ! See ' + values.CrashDumpDaemon + ' for more informations\n')
+        print('\n Metraixbeat encountered an error ! See ', values.CrashDumpDaemon, ' for more informations\n')
         # traceback.print_exc()
         
         # Exiting
@@ -123,13 +123,13 @@ def WorkOnMetrics():
     
     try:
         # Checking timer for SystemNetwork
-        ComparisonTimer = CompareTimer("SystemNetwork", SystemNetworkWaitValue)
-        if ComparisonTimer != devnull:
+        ComparisonTimer = CompareTimer("SystemNetwork", values.SystemNetworkWaitValue)
+        if ComparisonTimer != values.devnull:
             SystemNetwork(ComparisonTimer)
     except Exception as e:
         # Metricset has crashed
         # Creating the crash dump file and filling it with crash dump data
-        with open(CrashDumpDaemon, 'a') as f:
+        with open(values.CrashDumpDaemon, 'a') as f:
             f.write('\n\n')
             f.write(str(datetime.datetime.now()))
             f.write(':\n')
@@ -138,8 +138,8 @@ def WorkOnMetrics():
             f.write('\n')
 
         # Print and log error stack for debug purpose
-        logging.info('\n Metraixbeat encountered an error ! See ' + CrashDumpDaemon + ' for more informations\n')
-        print('\n Metraixbeat encountered an error ! See ', CrashDumpDaemon, ' for more informations\n')
+        logging.info('\n Metraixbeat encountered an error ! See ' + values.CrashDumpDaemon + ' for more informations\n')
+        print('\n Metraixbeat encountered an error ! See ', values.CrashDumpDaemon, ' for more informations\n')
         # traceback.print_exc()
         
         # Exiting
@@ -147,13 +147,13 @@ def WorkOnMetrics():
     
     try:
         # Checking timer for SystemFc
-        ComparisonTimer = CompareTimer("SystemFc", SystemFcWaitValue)
-        if ComparisonTimer != devnull:
+        ComparisonTimer = CompareTimer("SystemFc", values.SystemFcWaitValue)
+        if ComparisonTimer != values.devnull:
             SystemFc(ComparisonTimer)
     except Exception as e:
         # Metricset has crashed
         # Creating the crash dump file and filling it with crash dump data
-        with open(CrashDumpDaemon, 'a') as f:
+        with open(values.CrashDumpDaemon, 'a') as f:
             f.write('\n\n')
             f.write(str(datetime.datetime.now()))
             f.write(':\n')
@@ -162,8 +162,8 @@ def WorkOnMetrics():
             f.write('\n')
 
         # Print and log error stack for debug purpose
-        logging.info('\n Metraixbeat encountered an error ! See ' + CrashDumpDaemon + ' for more informations\n')
-        print('\n Metraixbeat encountered an error ! See ', CrashDumpDaemon, ' for more informations\n')
+        logging.info('\n Metraixbeat encountered an error ! See ' + values.CrashDumpDaemon + ' for more informations\n')
+        print('\n Metraixbeat encountered an error ! See ', values.CrashDumpDaemon, ' for more informations\n')
         # traceback.print_exc()
         
         # Exiting
@@ -171,13 +171,13 @@ def WorkOnMetrics():
     
     try:        
         # Checking timer for SystemSocketSummary
-        ComparisonTimer = CompareTimer("SystemSocketSummary", SystemSocketSummaryWaitValue)
-        if ComparisonTimer != devnull:
+        ComparisonTimer = CompareTimer("SystemSocketSummary", values.SystemSocketSummaryWaitValue)
+        if ComparisonTimer != values.devnull:
             SystemSocketSummary(ComparisonTimer)
     except Exception as e:
         # Metricset has crashed
         # Creating the crash dump file and filling it with crash dump data
-        with open(CrashDumpDaemon, 'a') as f:
+        with open(values.CrashDumpDaemon, 'a') as f:
             f.write('\n\n')
             f.write(str(datetime.datetime.now()))
             f.write(':\n')
@@ -186,8 +186,8 @@ def WorkOnMetrics():
             f.write('\n')
 
         # Print and log error stack for debug purpose
-        logging.info('\n Metraixbeat encountered an error ! See ' + CrashDumpDaemon + ' for more informations\n')
-        print('\n Metraixbeat encountered an error ! See ', CrashDumpDaemon, ' for more informations\n')
+        logging.info('\n Metraixbeat encountered an error ! See ' + values.CrashDumpDaemon + ' for more informations\n')
+        print('\n Metraixbeat encountered an error ! See ', values.CrashDumpDaemon, ' for more informations\n')
         # traceback.print_exc()
         
         # Exiting
@@ -195,14 +195,14 @@ def WorkOnMetrics():
     
     try:        
 
-        ComparisonTimer = CompareTimer("SystemSocket", SystemSocketWaitValue)
-        if (ComparisonTimer != devnull) and (SystemSocketThread.is_alive() != True):
+        ComparisonTimer = CompareTimer("SystemSocket", values.SystemSocketWaitValue)
+        if (ComparisonTimer != values.devnull) and (SystemSocketThread.is_alive() != True):
             SystemSocketThread = threading.Thread(target=SystemSocket, args=(ComparisonTimer,))
             SystemSocketThread.start()
     except Exception as e:
         # Metricset has crashed
         # Creating the crash dump file and filling it with crash dump data
-        with open(CrashDumpDaemon, 'a') as f:
+        with open(values.CrashDumpDaemon, 'a') as f:
             f.write('\n\n')
             f.write(str(datetime.datetime.now()))
             f.write(':\n')
@@ -211,8 +211,8 @@ def WorkOnMetrics():
             f.write('\n')
 
         # Print and log error stack for debug purpose
-        logging.info('\n Metraixbeat encountered an error ! See ' + CrashDumpDaemon + ' for more informations\n')
-        print('\n Metraixbeat encountered an error ! See ', CrashDumpDaemon, ' for more informations\n')
+        logging.info('\n Metraixbeat encountered an error ! See ' + values.CrashDumpDaemon + ' for more informations\n')
+        print('\n Metraixbeat encountered an error ! See ', values.CrashDumpDaemon, ' for more informations\n')
         # traceback.print_exc()
         
         # Exiting
@@ -220,13 +220,13 @@ def WorkOnMetrics():
     
     try:
         # Checking timer for SystemProcessSummary
-        ComparisonTimer = CompareTimer("SystemProcessSummary", SystemProcessSummaryWaitValue)
-        if ComparisonTimer != devnull:
+        ComparisonTimer = CompareTimer("SystemProcessSummary", values.SystemProcessSummaryWaitValue)
+        if ComparisonTimer != values.devnull:
             SystemProcessSummary(ComparisonTimer)
     except Exception as e:
         # Metricset has crashed
         # Creating the crash dump file and filling it with crash dump data
-        with open(CrashDumpDaemon, 'a') as f:
+        with open(values.CrashDumpDaemon, 'a') as f:
             f.write('\n\n')
             f.write(str(datetime.datetime.now()))
             f.write(':\n')
@@ -235,8 +235,8 @@ def WorkOnMetrics():
             f.write('\n')
 
         # Print and log error stack for debug purpose
-        logging.info('\n Metraixbeat encountered an error ! See ' + CrashDumpDaemon + ' for more informations\n')
-        print('\n Metraixbeat encountered an error ! See ', CrashDumpDaemon, ' for more informations\n')
+        logging.info('\n Metraixbeat encountered an error ! See ' + values.CrashDumpDaemon + ' for more informations\n')
+        print('\n Metraixbeat encountered an error ! See ', values.CrashDumpDaemon, ' for more informations\n')
         # traceback.print_exc()
         
         # Exiting
@@ -244,14 +244,14 @@ def WorkOnMetrics():
     
     try:
         # Checking timer for SystemProcess
-        ComparisonTimer = CompareTimer("SystemProcess", SystemProcessWaitValue)
-        if (ComparisonTimer != devnull) and (SystemProcessThread.is_alive() != True):
+        ComparisonTimer = CompareTimer("SystemProcess", values.SystemProcessWaitValue)
+        if (ComparisonTimer != values.devnull) and (SystemProcessThread.is_alive() != True):
             SystemProcessThread = threading.Thread(target=SystemProcess, args=(ComparisonTimer,))
             SystemProcessThread.start()
     except Exception as e:
         # Metricset has crashed
         # Creating the crash dump file and filling it with crash dump data
-        with open(CrashDumpDaemon, 'a') as f:
+        with open(values.CrashDumpDaemon, 'a') as f:
             f.write('\n\n')
             f.write(str(datetime.datetime.now()))
             f.write(':\n')
@@ -260,8 +260,8 @@ def WorkOnMetrics():
             f.write('\n')
 
         # Print and log error stack for debug purpose
-        logging.info('\n Metraixbeat encountered an error ! See ' + CrashDumpDaemon + ' for more informations\n')
-        print('\n Metraixbeat encountered an error ! See ', CrashDumpDaemon, ' for more informations\n')
+        logging.info('\n Metraixbeat encountered an error ! See ' + values.CrashDumpDaemon + ' for more informations\n')
+        print('\n Metraixbeat encountered an error ! See ', values.CrashDumpDaemon, ' for more informations\n')
         # traceback.print_exc()
         
         # Exiting
@@ -269,14 +269,14 @@ def WorkOnMetrics():
     
     try:
         # Checking timer for SystemDiskIO
-        ComparisonTimer = CompareTimer("SystemDiskIO", SystemDiskIOWaitValue)
-        if (ComparisonTimer != devnull) and (SystemDiskIOThread.is_alive() != True):
+        ComparisonTimer = CompareTimer("SystemDiskIO", values.SystemDiskIOWaitValue)
+        if (ComparisonTimer != values.devnull) and (SystemDiskIOThread.is_alive() != True):
             SystemDiskIOThread = threading.Thread(target=SystemDiskIO, args=(ComparisonTimer,))
             SystemDiskIOThread.start()
     except Exception as e:
         # Metricset has crashed
         # Creating the crash dump file and filling it with crash dump data
-        with open(CrashDumpDaemon, 'a') as f:
+        with open(values.CrashDumpDaemon, 'a') as f:
             f.write('\n\n')
             f.write(str(datetime.datetime.now()))
             f.write(':\n')
@@ -285,8 +285,8 @@ def WorkOnMetrics():
             f.write('\n')
 
         # Print and log error stack for debug purpose
-        logging.info('\n Metraixbeat encountered an error ! See ' + CrashDumpDaemon + ' for more informations\n')
-        print('\n Metraixbeat encountered an error ! See ', CrashDumpDaemon, ' for more informations\n')
+        logging.info('\n Metraixbeat encountered an error ! See ' + values.CrashDumpDaemon + ' for more informations\n')
+        print('\n Metraixbeat encountered an error ! See ', values.CrashDumpDaemon, ' for more informations\n')
         # traceback.print_exc()
         
         # Exiting
@@ -294,13 +294,13 @@ def WorkOnMetrics():
     
     try:
         # Checking timer for SystemFilesystemAndFstat
-        ComparisonTimer = CompareTimer("SystemFilesystemAndFstat", SystemFilesystemAndFstatWaitValue)
-        if ComparisonTimer != devnull:
+        ComparisonTimer = CompareTimer("SystemFilesystemAndFstat", values.SystemFilesystemAndFstatWaitValue)
+        if ComparisonTimer != values.devnull:
             SystemFilesystemAndFstat(ComparisonTimer)
     except Exception as e:
         # Metricset has crashed
         # Creating the crash dump file and filling it with crash dump data
-        with open(CrashDumpDaemon, 'a') as f:
+        with open(values.CrashDumpDaemon, 'a') as f:
             f.write('\n\n')
             f.write(str(datetime.datetime.now()))
             f.write(':\n')
@@ -309,8 +309,8 @@ def WorkOnMetrics():
             f.write('\n')
 
         # Print and log error stack for debug purpose
-        logging.info('\n Metraixbeat encountered an error ! See ' + CrashDumpDaemon + ' for more informations\n')
-        print('\n Metraixbeat encountered an error ! See ', CrashDumpDaemon, ' for more informations\n')
+        logging.info('\n Metraixbeat encountered an error ! See ' + values.CrashDumpDaemon + ' for more informations\n')
+        print('\n Metraixbeat encountered an error ! See ', values.CrashDumpDaemon, ' for more informations\n')
         # traceback.print_exc()
         
         # Exiting
@@ -318,14 +318,14 @@ def WorkOnMetrics():
     
     try:        
         # Checking timer for PingPlotter
-        ComparisonTimer = CompareTimer("PingPlotter", PingPlotterWaitValue)
-        if (ComparisonTimer != devnull) and (PingPlotterThread.is_alive() != True):
+        ComparisonTimer = CompareTimer("PingPlotter", values.PingPlotterWaitValue)
+        if (ComparisonTimer != values.devnull) and (PingPlotterThread.is_alive() != True):
             PingPlotterThread = threading.Thread(target=PingPlotter, args=(ComparisonTimer,))
             PingPlotterThread.start()
     except Exception as e:
         # Metricset has crashed
         # Creating the crash dump file and filling it with crash dump data
-        with open(CrashDumpDaemon, 'a') as f:
+        with open(values.CrashDumpDaemon, 'a') as f:
             f.write('\n\n')
             f.write(str(datetime.datetime.now()))
             f.write(':\n')
@@ -334,8 +334,8 @@ def WorkOnMetrics():
             f.write('\n')
 
         # Print and log error stack for debug purpose
-        logging.info('\n Metraixbeat encountered an error ! See ' + CrashDumpDaemon + ' for more informations\n')
-        print('\n Metraixbeat encountered an error ! See ', CrashDumpDaemon, ' for more informations\n')
+        logging.info('\n Metraixbeat encountered an error ! See ' + values.CrashDumpDaemon + ' for more informations\n')
+        print('\n Metraixbeat encountered an error ! See ', values.CrashDumpDaemon, ' for more informations\n')
         # traceback.print_exc()
         
         # Exiting
@@ -343,14 +343,14 @@ def WorkOnMetrics():
     
     try:    
         # Checking timer for SystemHypervisor, if enabled in Parameters.conf file
-        if IfSystemHypervisorEnable == "yes":
-            ComparisonTimer = CompareTimer("SystemHypervisor", SystemHypervisorWaitValue)
-            if ComparisonTimer != devnull:
+        if values.IfSystemHypervisorEnable == "yes":
+            ComparisonTimer = CompareTimer("SystemHypervisor", values.ystemHypervisorWaitValue)
+            if ComparisonTimer != values.devnull:
                 SystemHypervisor(ComparisonTimer)
     except Exception as e:
         # Metricset has crashed
         # Creating the crash dump file and filling it with crash dump data
-        with open(CrashDumpDaemon, 'a') as f:
+        with open(values.CrashDumpDaemon, 'a') as f:
             f.write('\n\n')
             f.write(str(datetime.datetime.now()))
             f.write(':\n')
@@ -359,8 +359,8 @@ def WorkOnMetrics():
             f.write('\n')
 
         # Print and log error stack for debug purpose
-        logging.info('\n Metraixbeat encountered an error ! See ' + CrashDumpDaemon + ' for more informations\n')
-        print('\n Metraixbeat encountered an error ! See ', CrashDumpDaemon, ' for more informations\n')
+        logging.info('\n Metraixbeat encountered an error ! See ' + values.CrashDumpDaemon + ' for more informations\n')
+        print('\n Metraixbeat encountered an error ! See ', values.CrashDumpDaemon, ' for more informations\n')
         # traceback.print_exc()
         
         # Exiting
@@ -368,15 +368,15 @@ def WorkOnMetrics():
     
     try:           
         # Checking timer for SystemHPMStat, if enabled in Parameters.conf file
-        if IfSystemHPMStatEnable == "yes":
-            ComparisonTimer = CompareTimer("SystemHPMStat", SystemHPMStatWaitValue)
-            if (ComparisonTimer != devnull) and (SystemHPMStatThread.is_alive() != True):
+        if values.IfSystemHPMStatEnable == "yes":
+            ComparisonTimer = CompareTimer("SystemHPMStat", values.SystemHPMStatWaitValue)
+            if (ComparisonTimer != values.devnull) and (SystemHPMStatThread.is_alive() != True):
                 SystemHPMStatThread = threading.Thread(target=SystemHPMStat, args=(ComparisonTimer,))
                 SystemHPMStatThread.start()
     except Exception as e:
         # Metricset has crashed
         # Creating the crash dump file and filling it with crash dump data
-        with open(CrashDumpDaemon, 'a') as f:
+        with open(values.CrashDumpDaemon, 'a') as f:
             f.write('\n\n')
             f.write(str(datetime.datetime.now()))
             f.write(':\n')
@@ -385,8 +385,8 @@ def WorkOnMetrics():
             f.write('\n')
 
         # Print and log error stack for debug purpose
-        logging.info('\n Metraixbeat encountered an error ! See ' + CrashDumpDaemon + ' for more informations\n')
-        print('\n Metraixbeat encountered an error ! See ', CrashDumpDaemon, ' for more informations\n')
+        logging.info('\n Metraixbeat encountered an error ! See ' + values.CrashDumpDaemon + ' for more informations\n')
+        print('\n Metraixbeat encountered an error ! See ', values.CrashDumpDaemon, ' for more informations\n')
         # traceback.print_exc()
         
         # Exiting
@@ -394,9 +394,9 @@ def WorkOnMetrics():
     
     # Checking if any Custom Metric need to be executed
     # IMPROVEMENT - Threading execution of each Custom metric as it will slow down the script loop
-    for CustomMetricItem in CustomMetricsConfigsArray:
+    for CustomMetricItem in values.CustomMetricsConfigsArray:
         # Spliting the result line to get content
-        CustomMetricSplitedLine = CustomMetricsConfigsArray[CustomMetricItem].split(',')
+        CustomMetricSplitedLine = values.CustomMetricsConfigsArray[CustomMetricItem].split(',')
 
         # Creating a short name for the current Custom config
         CustomMetricItemName = CustomMetricItem.replace('.custom.conf','')
@@ -409,12 +409,12 @@ def WorkOnMetrics():
         try:
             # Checking timer for the current Custom Metric into try/catch, third parameter is only for user log formating
             ComparisonTimer = CompareTimer(CustomMetricItemName, CustomMetricItemWaitValue, '(Custom metrics)')
-            if ComparisonTimer != devnull:
+            if ComparisonTimer != values.devnull:
                 CustomMetricExec(CustomMetricItemOSScript, CustomMetricItemName, ComparisonTimer, CustomMetricItemOutput)
         except Exception as e:
             # Metricset has crashed
             # Creating the crash dump file and filling it with crash dump data
-            with open(CrashDumpDaemon, 'a') as f:
+            with open(values.CrashDumpDaemon, 'a') as f:
                 f.write('\n\n')
                 f.write(str(datetime.datetime.now()))
                 f.write(':\n')
@@ -423,8 +423,8 @@ def WorkOnMetrics():
                 f.write('\n')
 
             # Print and log error stack for debug purpose
-            logging.info('\n Metraixbeat encountered an error ! See ' + CrashDumpDaemon + ' for more informations\n')
-            print('\n Metraixbeat encountered an error ! See ', CrashDumpDaemon, ' for more informations\n')
+            logging.info('\n Metraixbeat encountered an error ! See ' + values.CrashDumpDaemon + ' for more informations\n')
+            print('\n Metraixbeat encountered an error ! See ', values.CrashDumpDaemon, ' for more informations\n')
             # traceback.print_exc()
             
             # Exiting
@@ -457,7 +457,7 @@ def CustomMetricExec(OSScript, ItemName, ComparisonTimer, Output):
             '\"system\":{\"custom\":{\"' + ItemName + '\":{\"name\":\"' + CurrLine[0] + '\",\"value\":\"' + EmptyString.join(CurrLine[1:]).replace('"','') + '\"}}}')
            
             # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
+            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + values.StaticJSON
             
             # Adding JSON metrics values gathered from OS command
             JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -568,7 +568,7 @@ def SystemCoreAndCpu(ComparisonTimer):
     CPUWaitQueue = str(float(SystemCoreAndCpuCmd[3]))
     
     # If LPAR is a VIOS nad NMON running, gathering CPU pool information from current NMON file
-    if IfVIOS:
+    if values.IfVIOS:
         # Making try/catch to avoid any unpredicted situation (and no NMON running of course)... To improve...
         try:
             # Checking if any NMON is running
@@ -632,7 +632,7 @@ def SystemCoreAndCpu(ComparisonTimer):
     '\"pct\":' + CPUIOWaitPCTNorm + '}}}}')   
    
     # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
+    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + values.StaticJSON
     
     # Adding JSON metrics values gathered from OS command
     JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -670,7 +670,7 @@ def SystemCoreAndCpu(ComparisonTimer):
     '\"cpuwaitqueue\":' + CPUWaitQueue + '')
     
     # Adding CPU Pool metrics for VIOS
-    if IfVIOS and NewNMONData:
+    if values.IfVIOS and NewNMONData:
         JSONToSendValues = JSONToSendValues + ',\"cpupoolidle\":' + str(CpuPoolIdle) + ''
         
     # Then, adding the rest of the metrics
@@ -687,7 +687,7 @@ def SystemCoreAndCpu(ComparisonTimer):
     '}}')
    
     # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
+    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + values.StaticJSON
     
     # Adding JSON metrics values gathered from OS command
     JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -716,7 +716,7 @@ def SystemFc(ComparisonTimer):
     
     
     # For each FC card with link ok
-    for FcCard in FcCards:
+    for FcCard in values.FcCards:
         # Removing empty lines
         if(len(FcCard) != 0):
             # Generating current ELK timestamp for JSON message
@@ -779,7 +779,7 @@ def SystemFc(ComparisonTimer):
             '\"bytes\":' + CurrFcCardWriteBytes + '}}}')
 
             # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
+            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + values.StaticJSON
             
             # Adding JSON metrics values gathered from OS command
             JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -807,7 +807,7 @@ def SystemNetwork(ComparisonTimer):
     # global SystemNetworkThread
     # SystemNetworkThread = threading.currentThread()
 
-    for NetworkCard in NetworkCards:
+    for NetworkCard in values.NetworkCards:
         # Removing empty lines
         if(len(NetworkCard) != 0):
             # Generating current ELK timestamp for JSON message
@@ -853,7 +853,7 @@ def SystemNetwork(ComparisonTimer):
 
             
             # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
+            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + values.StaticJSON
             
             # Adding JSON metrics values gathered from OS command
             JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -894,9 +894,9 @@ def SystemLoad(ComparisonTimer):
     LoadFifteen = float(SystemLoadCmd[-1])
 
     # Calculating per core values
-    LoadOnePerCore = LoadOne / NumProc
-    LoadFivePerCore = LoadFive / NumProc
-    LoadFifteenPerCore = LoadFifteen / NumProc
+    LoadOnePerCore = LoadOne / values.NumProc
+    LoadFivePerCore = LoadFive / values.NumProc
+    LoadFifteenPerCore = LoadFifteen / values.NumProc
 
     # Converting to string for JSON formating
     LoadOne = str(LoadOne)
@@ -914,10 +914,10 @@ def SystemLoad(ComparisonTimer):
     '\"norm\":{\"1\":' + LoadOnePerCore + ','
     '\"5\":' + LoadFivePerCore + ','
     '\"15\":' + LoadFifteenPerCore + '},'
-    '\"cores\":' + NumProcString + '}}')
+    '\"cores\":' + values.NumProcString + '}}')
     
     # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
+    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + values.StaticJSON
     
     # Adding JSON metrics values gathered from OS command
     JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -1102,7 +1102,7 @@ def SystemMemory(ComparisonTimer):
 
     
     # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
+    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + values.StaticJSON
     
     # Adding JSON metrics values gathered from OS command
     JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -1211,7 +1211,7 @@ def SystemProcessSummary(ComparisonTimer):
     '\"stopped\":' + StoppedPS + '}}}')
     
     # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
+    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + values.StaticJSON
     
     # Adding JSON metrics values gathered from OS command
     JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -1239,24 +1239,24 @@ def SystemDiskIO(ComparisonTimer):
     SystemDiskIOThread = threading.currentThread()
 
     # Checking if some restrictions are in place for HDISKs list
-    if HdiskRestricted == 'all':
+    if values.HdiskRestricted == 'all':
         # Gathering disk list from OS command
         SystemDiskIO = subprocess.Popen("lspv | awk '{print $1}'", shell=True, stdout=subprocess.PIPE).stdout
         SystemDiskIO = SystemDiskIO.read().decode().split()
         
         # Getting system command ready
-        SystemDiskIOCmd = 'iostat -D ' + str(DiskSampleRate) + ' 1'
+        SystemDiskIOCmd = 'iostat -D ' + str(values.DiskSampleRate) + ' 1'
         
     else:
         # Restriction is in place,reducing disk list to specified disks
         SystemDiskIO = []
-        SystemDiskIOStat = HdiskRestricted.replace(',',' ')
+        SystemDiskIOStat = values.HdiskRestricted.replace(',',' ')
         # logging.info("SystemDiskIOStat " + str(SystemDiskIOStat))
-        SystemDiskIO = HdiskRestricted.split(',')
+        SystemDiskIO = values.HdiskRestricted.split(',')
         # logging.info("SystemDiskIO " + str(SystemDiskIO))
         
         # Getting system command ready
-        SystemDiskIOCmd = 'iostat -D ' + str(SystemDiskIOStat) + ' ' + str(DiskSampleRate) + ' 1'
+        SystemDiskIOCmd = 'iostat -D ' + str(SystemDiskIOStat) + ' ' + str(values.DiskSampleRate) + ' 1'
         
     # Generating current ELK timestamp for JSON message
     SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
@@ -1348,10 +1348,10 @@ def SystemDiskIO(ComparisonTimer):
         IoBusy = XferSplitedLine[0]
 
         # Calculating value depending of disk measurement period
-        DiskWriteRequestPerSec = float(DiskWriteCount) * DiskSampleRate
-        DiskWriteBytesPerSec = float(DiskWriteBytes) * DiskSampleRate
-        DiskReadRequestPerSec = float(DiskReadCount) * DiskSampleRate
-        DiskReadBytesPerSec = float(DiskReadBytes) * DiskSampleRate
+        DiskWriteRequestPerSec = float(DiskWriteCount) * values.DiskSampleRate
+        DiskWriteBytesPerSec = float(DiskWriteBytes) * values.DiskSampleRate
+        DiskReadRequestPerSec = float(DiskReadCount) * values.DiskSampleRate
+        DiskReadBytesPerSec = float(DiskReadBytes) * values.DiskSampleRate
 
         # IMPROVEMENT - IoTime - Je sais pas le traduire =0 pour le moment...
         IoTime = 0
@@ -1441,7 +1441,7 @@ def SystemDiskIO(ComparisonTimer):
         '\"io\":{\"time\":' + IoAwait + '}}}')
         
         # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-        JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
+        JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + values.StaticJSON
         
         # Adding JSON metrics values gathered from OS command
         JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -1540,7 +1540,7 @@ def SystemFilesystemAndFstat(ComparisonTimer):
             '')
             
             # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
+            JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + values.StaticJSON
             
             # Adding JSON metrics values gathered from OS command
             JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -1571,7 +1571,7 @@ def SystemFilesystemAndFstat(ComparisonTimer):
     '\"total_files\":' + FSTotalFiles + '}}')
     
     # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
+    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + values.StaticJSON
     
     # Adding JSON metrics values gathered from OS command
     JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -1606,14 +1606,14 @@ def SystemHPMStat(ComparisonTimer):
     # We can get several "HPM Counter reserved" errors, then hidding them
     try:
         # Checking Power Hardware to get correct counters (all counters are not available on all architecture...)
-        if LPARArch == "PowerPC_POWER8":
+        if values.LPARArch == "PowerPC_POWER8":
             # For Power 8
             HPMStatInclude = 'Cycles per instruction|Instructions per cycles|ITLB miss rate per inst|L2 Instruction Miss Rate|L3 Instruction Miss Rate'
 
             # Gathering data from OS command
             SystemHPMGrpGeneralCmd = 'hpmstat -m General:uk | egrep -w "' + HPMStatInclude + '"'
             
-            SystemHPMGrpGeneral = subprocess.Popen(SystemHPMGrpGeneralCmd, shell=True, stdout=subprocess.PIPE, stderr = devnull).stdout
+            SystemHPMGrpGeneral = subprocess.Popen(SystemHPMGrpGeneralCmd, shell=True, stdout=subprocess.PIPE, stderr = values.devnull).stdout
             SystemHPMGrpGeneral = SystemHPMGrpGeneral.read().decode().split('\n')
             
             CyclePerInst = SystemHPMGrpGeneral[0].split()[-1]
@@ -1624,14 +1624,14 @@ def SystemHPMStat(ComparisonTimer):
 
             FinalString = '{\"cpugeneral\":{\"cycleperinst\":' + CyclePerInst + ',\"instpercycle\":' + InstPerCycle + ',\"l2missrate\":' + L2MissRate + ',\"l3missrate\":' + L3MissRate + ',\"itlbmissrate\":' + ITLBMissRate + '},'
 
-        elif LPARArch == "PowerPC_POWER9":
+        elif values.LPARArch == "PowerPC_POWER9":
             # For Power 9
             HPMStatInclude = 'Run cycles per run instruction|% ITLB miss rate per inst|L2 demand Load Miss Rate |L3 demand Load Miss Rate '
             
             # Gathering data from OS command
             SystemHPMGrpGeneralCmd = 'hpmstat -m General:uk | egrep -w "' + HPMStatInclude + '"'
             
-            SystemHPMGrpGeneral = subprocess.Popen(SystemHPMGrpGeneralCmd, shell=True, stdout=subprocess.PIPE, stderr = devnull).stdout
+            SystemHPMGrpGeneral = subprocess.Popen(SystemHPMGrpGeneralCmd, shell=True, stdout=subprocess.PIPE, stderr = values.devnull).stdout
             SystemHPMGrpGeneral = SystemHPMGrpGeneral.read().decode().split('\n')
             
             CyclePerInst = SystemHPMGrpGeneral[0].split()[-1]
@@ -1641,14 +1641,14 @@ def SystemHPMStat(ComparisonTimer):
 
             FinalString = '{\"cpugeneral\":{\"cycleperinst\":' + CyclePerInst + ',\"l2missrate\":' + L2MissRate + ',\"l3missrate\":' + L3MissRate + ',\"itlbmissrate\":' + ITLBMissRate + '},'
             
-        elif LPARArch == "PowerPC_POWER7":
+        elif values.LPARArch == "PowerPC_POWER7":
             # For Power 7
             HPMStatInclude = 'Cycles per instruction|Instructions per cycles|L2 Instruction Miss Rate |L3 Instruction Miss Rate ' 
             
             # Gathering data from OS command
             SystemHPMGrpGeneralCmd = 'hpmstat -m General:uk | egrep -w "' + HPMStatInclude + '"'
 
-            SystemHPMGrpGeneral = subprocess.Popen(SystemHPMGrpGeneralCmd, shell=True, stdout=subprocess.PIPE, stderr = devnull).stdout
+            SystemHPMGrpGeneral = subprocess.Popen(SystemHPMGrpGeneralCmd, shell=True, stdout=subprocess.PIPE, stderr = values.devnull).stdout
             SystemHPMGrpGeneral = SystemHPMGrpGeneral.read().decode().split('\n')
 
             CyclePerInst = SystemHPMGrpGeneral[0].split()[-2]
@@ -1665,7 +1665,7 @@ def SystemHPMStat(ComparisonTimer):
     # No SMT or Cache reload counters exist for Power 9 (Need more investigation maybe...)
     
     # SMT and CPU Cache reload counters exists for Power8
-    if LPARArch == "PowerPC_POWER8":
+    if values.LPARArch == "PowerPC_POWER8":
         # Defining which values we want to take from output for group 4
         # If some fields are added or remove, all the code has to be reviewed as positions will change...
         HPMStatInclude = "PM_RUN_CYC_SMT2_MODE|PM_RUN_CYC_SMT4_MODE|PM_RUN_CYC_SMT8_MODE"
@@ -1711,7 +1711,7 @@ def SystemHPMStat(ComparisonTimer):
         FinalString = str(FinalString) + '\"cpucachereload\":{\"l2cachemiss\":' + L2cachemiss + ',\"local\":' + LocalCacheReload + ',\"remote\":' + RemoteCacheReload + ',\"distant\":' + DistantCacheReload + '},'
     
     # Cache reload counters only exists for Power7 in differrent and separate group id
-    if LPARArch == "PowerPC_POWER7":
+    if values.LPARArch == "PowerPC_POWER7":
         # Defining which values we want to take from output for group 53
         # If some fields are added or remove, all the code has to be reviewed as positions will change...
         HPMStatInclude = "PM_DATA_FROM_LMEM|PM_DATA_FROM_RMEM|PM_DATA_FROM_DMEM"
@@ -1754,7 +1754,7 @@ def SystemHPMStat(ComparisonTimer):
     '\"system\":{\"hpmstat\":' + FinalString + '}')
     
     # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
+    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + values.StaticJSON
     
     # Adding JSON metrics values gathered from OS command
     JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -1825,7 +1825,7 @@ def SystemHypervisor(ComparisonTimer):
     '\"system\":{\"hypervisor\":{' + FinalStringConcat + '}}')
     
     # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
+    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + values.StaticJSON
     
     # Adding JSON metrics values gathered from OS command
     JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -1857,10 +1857,10 @@ def SystemProcess(ComparisonTimer):
     SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
 
     # Checking if a limit is set for Processes analysis
-    if TopProcesses != 0:
+    if values.TopProcesses != 0:
         # Get Processs CPU usage for a limited number of processes
-        # The maximum number of processes in defined in TopProcesses var
-        SystemProcessCmd = "ps -ef -o pid,ppid,pgid,command,status,vsz,rssize,pmem,uname,time,pcpu,start,args | sed '1 d' | sort -rk 11 | head -" + str(TopProcesses)
+        # The maximum number of processes in defined in values.TopProcesses var
+        SystemProcessCmd = "ps -ef -o pid,ppid,pgid,command,status,vsz,rssize,pmem,uname,time,pcpu,start,args | sed '1 d' | sort -rk 11 | head -" + str(values.TopProcesses)
         SystemProcess = subprocess.Popen(SystemProcessCmd, shell=True, stdout=subprocess.PIPE).stdout
     else:
         # Get CPU usage values from ps command for all processes -- current version
@@ -1936,7 +1936,7 @@ def SystemProcess(ComparisonTimer):
                 if ProcessCpuTotalPCTNorm != "0,0":
                     # Changing . in , for calculation and converting to ELK PCT format
                     ProcessCpuTotalPCTNorm = float(ProcessCpuTotalPCTNorm.replace(',', '.')) / 100
-                    ProcessCpuTotalPCT = ProcessCpuTotalPCTNorm * int(NumProc)
+                    ProcessCpuTotalPCT = ProcessCpuTotalPCTNorm * int(values.NumProc)
                 else:
                     ProcessCpuTotalPCTNorm = 0
                     ProcessCpuTotalPCT = 0
@@ -2038,7 +2038,7 @@ def SystemProcess(ComparisonTimer):
 
                 # Get CWD value from OS command
                 ProcessCwdCmd = "lsof -p " + ProcessPid + " | grep cwd | awk '{print $9}'"
-                ProcessCwd = subprocess.Popen(ProcessCwdCmd, shell=True, stdout=subprocess.PIPE, stderr = devnull).stdout
+                ProcessCwd = subprocess.Popen(ProcessCwdCmd, shell=True, stdout=subprocess.PIPE, stderr = values.devnull).stdout
                 # , stdout = subprocess.PIPE, stderr = subprocess.PIPE
                 ProcessCwd = ProcessCwd.read().decode().split('\n')
                 ProcessCwd = ProcessCwd[0]
@@ -2114,7 +2114,7 @@ def SystemProcess(ComparisonTimer):
                
                
                 # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-                JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
+                JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + values.StaticJSON
                 
                 # Adding JSON metrics values gathered from OS command
                 JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -2264,7 +2264,7 @@ def SystemSocketSummary(ComparisonTimer):
     '}}')
     
     # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
+    JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + values.StaticJSON
     
     # Adding JSON metrics values gathered from OS command
     JSONToSend = JSONToSend + ',' + JSONToSendValues
@@ -2375,7 +2375,7 @@ def SystemSocket(ComparisonTimer):
                             LsofCmd = 'lsof -i :' + LocalPort + ' | grep ' + RemotePort + '| tail -1'
                     
                     # Getting process information linked to the current connection
-                    LSOFResult = subprocess.Popen(LsofCmd, shell=True, stdout=subprocess.PIPE, stderr = devnull).stdout
+                    LSOFResult = subprocess.Popen(LsofCmd, shell=True, stdout=subprocess.PIPE, stderr = values.devnull).stdout
                     LSOFResult = LSOFResult.read().decode().split()
                     
                     # Filling vars with LSOF results
@@ -2511,7 +2511,7 @@ def SystemSocket(ComparisonTimer):
                 
                 # Getting process information linked to the current connection
                 # Gathering data from OS command for SystemSocketSummarySummary
-                LSOFResult = subprocess.Popen(LsofCmd, shell=True, stdout=subprocess.PIPE, stderr = devnull).stdout
+                LSOFResult = subprocess.Popen(LsofCmd, shell=True, stdout=subprocess.PIPE, stderr = values.devnull).stdout
                 LSOFResult = LSOFResult.read().decode().split()
                 
                 # Filling vars with LSOF results
@@ -2635,7 +2635,7 @@ def SystemSocket(ComparisonTimer):
                 '}')
                 
                 # Adding Timestamp and static "ELK Formating" JSON values into final JSON message
-                JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + StaticJSON
+                JSONToSend = '{\"@timestamp\":\"' + SeqIdTimestamp + 'Z\",' + values.StaticJSON
                 
                 # Adding JSON metrics values gathered from OS command
                 JSONToSend = JSONToSend + ',' + JSONToSendValues

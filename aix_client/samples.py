@@ -14,6 +14,7 @@ import json
 import requests
 
 from urllib.error import HTTPError
+from utils import SendJSON
 
 
 
@@ -183,34 +184,8 @@ def LoadDaemonConfig():
         traceback.print_exc()
         os._exit(2)
 
-    # Log
-    # Log
     logging.info(" - Loading Daemon configuration... Done !")
-
-    # Debug
-    # print('\nDEBUG\n')
-    # print('<!> DEBUG ', ELKMonitoringVersion, 'ELKMonitoringVersion')
-    # print('<!> DEBUG ', ECSVersion, 'ECSVersion')
-    # print('<!> DEBUG ', BaseDir, 'BaseDir')
-    # print('<!> DEBUG ', Metricbeat_LogStash_HostName, 'Metricbeat_LogStash_HostName')
-    # print('<!> DEBUG ', Filebeat_LogStash_HostName, 'Filebeat_LogStash_HostName')
-    # print('<!> DEBUG ', Metricbeat_LogStash_PORT, 'Metricbeat_LogStash_PORT')
-    # print('<!> DEBUG ', Filebeat_LogStash_PORT, 'Filebeat_LogStash_PORT')
-    # print('<!> DEBUG ', FQDN, 'FQDN')
-    # print('<!> DEBUG ', TailRefreshValue, 'TailRefreshValue')
-    # print('<!> DEBUG ', CycleSleepTime, 'CycleSleepTime')
-    # print('<!> DEBUG ', DiskSampleRate, 'DiskSampleRate')
-    # print('<!> DEBUG ', TopProcesses, 'TopProcesses')
-    # print('<!> DEBUG ', SystemProcessWaitValue, 'SystemProcessWaitValue')
-    # print('<!> DEBUG ', SystemFilesystemAndFstatWaitValue, 'SystemFilesystemAndFstatWaitValue')
-    # print('<!> DEBUG ', SystemDiskIOWaitValue, 'SystemDiskIOWaitValue')
-    # print('<!> DEBUG ', SystemProcessSummaryWaitValue, 'SystemProcessSummaryWaitValue')
-    # print('<!> DEBUG ', SystemLoadWaitValue, 'SystemLoadWaitValue')
-    # print('<!> DEBUG ', SystemFcWaitValue, 'SystemFcWaitValue')
-    # print('<!> DEBUG ', SystemMemoryWaitValue, 'SystemMemoryWaitValue')
-    # print('<!> DEBUG ', SystemNetworkWaitValue, 'SystemNetworkWaitValue')
-    # print('<!> DEBUG ', SystemCoreAndCpuWaitValue, 'SystemCoreAndCpuWaitValue')
-    # print('\nFINDEBUG\n')
+       
     pass
 
 def LoadPluginConfig():
@@ -715,32 +690,3 @@ def CompareTimer(TimedTopic, MetricsWaitValue, CustomMetric = ''):
         logging.info(LogString)
         # print('NO ExecutionTimers[TimedTopic] and TimerLatency and MetricsWaitValue: ' + str(ExecutionTimers[TimedTopic]) + ' ' + str(round(TimerLatency,2)) + ' ' + str(MetricsWaitValue))
         return values.devnull
-
-def conf_path(path):
-    if os.path.isdir(path):
-        return path
-    else:
-        raise argparse.ArgumentTypeError(f"readable_dir:{path} is not a valid path")
-    
-def logs_path(path):
-    if os.path.isdir(path):
-        values.LogFilePath=path
-        return path
-    else:
-        raise argparse.ArgumentTypeError(f"readable_dir:{path} is not a valid path")
-
-def shutdown():
-    logging.info('Shutting down')
-    sys.exit(1)
-
-def signal_handler(signum, frame):
-    shutdown()
-    
-def parse_arguments():
-    parser = argparse.ArgumentParser(
-        description='this agent metricbeat from the servers AIX AIX 5.3, 6.1, 7.1 and 7.2.', 
-        prog='metraixbeat'
-    )
-    parser.add_argument('-c', '--configFile', type=conf_path, help=' parameters.conf file path')
-    parser.add_argument('-l', '--logFilePath', type=logs_path, help='Logs directory path')
-    return parser.parse_args()

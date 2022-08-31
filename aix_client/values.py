@@ -58,14 +58,14 @@ ElasticServersFailed = []
 FilebeatServersFailed = []
 LogstashServersFailed = []
 Tagz = []
-NMONSeq = None
+NMONSeq = 0
 
 
 # Using FilebeatConfigsArray and CustomMetricsConfigsArray dictionary for follow up purpose
-FilebeatConfigsArray = []
-CustomMetricsConfigsArray = []
+FilebeatConfigsArray = {}
+CustomMetricsConfigsArray = {}
 PingPlotterArray = None
-TargetFileCurrentPosArray = []
+TargetFileCurrentPosArray = {}
 
 
 # Setting vars for send to metricbeat
@@ -98,7 +98,7 @@ NumProcString = None
 IfVIOS = False
 
 # Switching FilebeatConfigsArray, TargetFileCurrentPosArray and TailStateArray dictionary for follow up purpose
-TailStateArray = []
+TailStateArray = {}
 
 
 # Switching value for this function  start logging
@@ -118,7 +118,7 @@ PingPlotterThread = None
 
 # Define variables for the function main
 devnull = None
-ExecutionTimers = []
+ExecutionTimers = {}
 # TargetFileMTimeCountArray fro the function main
 SystemProcessThread = None
 SystemSocketThread = None

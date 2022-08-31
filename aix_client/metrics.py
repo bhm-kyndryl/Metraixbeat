@@ -1,12 +1,14 @@
 #!/usr/bin/python
 
-
 import logging
 import subprocess
 import datetime
 import threading
-from time import time
 import traceback
+import re
+import time
+
+# import dependancies functions
 from samples import CompareTimer
 from utils import ErrptLog, GenerateDynamicJson, PingPlotter, SendJSON
 
@@ -28,7 +30,7 @@ def WorkOnMetrics():
     
     try:
         # Checking timer for SystemCoreAndCpu
-        print(f'test value funciton work on metric   {values.SystemCoreAndCpuWaitValue}')
+        # print(f'test value funciton work on metric   {values.SystemCoreAndCpuWaitValue}')
         ComparisonTimer = CompareTimer("SystemCoreAndCpu", values.SystemCoreAndCpuWaitValue)
         if ComparisonTimer != values.devnull:
             SystemCoreAndCpu(ComparisonTimer)
@@ -99,9 +101,9 @@ def WorkOnMetrics():
     try:
         # Checking timer for SystemMemory
         ComparisonTimer = CompareTimer("SystemMemory", values.SystemMemoryWaitValue)
-        if (ComparisonTimer != values.devnull) and (SystemMemoryThread.is_alive() != True):
-            SystemMemoryThread = threading.Thread(target=SystemMemory, args=(ComparisonTimer,))
-            SystemMemoryThread.start()
+        if (ComparisonTimer != values.devnull) and (values.SystemMemoryThread.is_alive() != True):
+            values.SystemMemoryThread = threading.Thread(target=SystemMemory, args=(ComparisonTimer,))
+            values.SystemMemoryThread.start()
     except Exception as e:
         # Metricset has crashed
         # Creating the crash dump file and filling it with crash dump data
@@ -245,9 +247,9 @@ def WorkOnMetrics():
     try:
         # Checking timer for SystemProcess
         ComparisonTimer = CompareTimer("SystemProcess", values.SystemProcessWaitValue)
-        if (ComparisonTimer != values.devnull) and (SystemProcessThread.is_alive() != True):
-            SystemProcessThread = threading.Thread(target=SystemProcess, args=(ComparisonTimer,))
-            SystemProcessThread.start()
+        if (ComparisonTimer != values.devnull) and (values.SystemProcessThread.is_alive() != True):
+            values.SystemProcessThread = threading.Thread(target=SystemProcess, args=(ComparisonTimer,))
+            values.SystemProcessThread.start()
     except Exception as e:
         # Metricset has crashed
         # Creating the crash dump file and filling it with crash dump data
@@ -270,9 +272,9 @@ def WorkOnMetrics():
     try:
         # Checking timer for SystemDiskIO
         ComparisonTimer = CompareTimer("SystemDiskIO", values.SystemDiskIOWaitValue)
-        if (ComparisonTimer != values.devnull) and (SystemDiskIOThread.is_alive() != True):
-            SystemDiskIOThread = threading.Thread(target=SystemDiskIO, args=(ComparisonTimer,))
-            SystemDiskIOThread.start()
+        if (ComparisonTimer != values.devnull) and (values.SystemDiskIOThread.is_alive() != True):
+            values.SystemDiskIOThread = threading.Thread(target=SystemDiskIO, args=(ComparisonTimer,))
+            values.SystemDiskIOThread.start()
     except Exception as e:
         # Metricset has crashed
         # Creating the crash dump file and filling it with crash dump data
@@ -319,9 +321,9 @@ def WorkOnMetrics():
     try:        
         # Checking timer for PingPlotter
         ComparisonTimer = CompareTimer("PingPlotter", values.PingPlotterWaitValue)
-        if (ComparisonTimer != values.devnull) and (PingPlotterThread.is_alive() != True):
-            PingPlotterThread = threading.Thread(target=PingPlotter, args=(ComparisonTimer,))
-            PingPlotterThread.start()
+        if (ComparisonTimer != values.devnull) and (values.PingPlotterThread.is_alive() != True):
+            values.PingPlotterThread = threading.Thread(target=PingPlotter, args=(ComparisonTimer,))
+            values.PingPlotterThread.start()
     except Exception as e:
         # Metricset has crashed
         # Creating the crash dump file and filling it with crash dump data
@@ -344,7 +346,7 @@ def WorkOnMetrics():
     try:    
         # Checking timer for SystemHypervisor, if enabled in Parameters.conf file
         if values.IfSystemHypervisorEnable == "yes":
-            ComparisonTimer = CompareTimer("SystemHypervisor", values.ystemHypervisorWaitValue)
+            ComparisonTimer = CompareTimer("SystemHypervisor", values.SystemHypervisorWaitValue)
             if ComparisonTimer != values.devnull:
                 SystemHypervisor(ComparisonTimer)
     except Exception as e:
@@ -370,9 +372,9 @@ def WorkOnMetrics():
         # Checking timer for SystemHPMStat, if enabled in Parameters.conf file
         if values.IfSystemHPMStatEnable == "yes":
             ComparisonTimer = CompareTimer("SystemHPMStat", values.SystemHPMStatWaitValue)
-            if (ComparisonTimer != values.devnull) and (SystemHPMStatThread.is_alive() != True):
-                SystemHPMStatThread = threading.Thread(target=SystemHPMStat, args=(ComparisonTimer,))
-                SystemHPMStatThread.start()
+            if (ComparisonTimer != values.devnull) and (values.SystemHPMStatThread.is_alive() != True):
+                values.SystemHPMStatThread = threading.Thread(target=SystemHPMStat, args=(ComparisonTimer,))
+                values.SystemHPMStatThread.start()
     except Exception as e:
         # Metricset has crashed
         # Creating the crash dump file and filling it with crash dump data
@@ -942,7 +944,7 @@ def SystemMemory(ComparisonTimer):
     """
 
     # Setting vars for threads follow up
-    SystemMemoryThread = threading.currentThread()
+    values.SystemMemoryThread = threading.currentThread()
 
     # Generating current ELK timestamp for JSON message
     SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
@@ -1236,7 +1238,7 @@ def SystemDiskIO(ComparisonTimer):
     """
 
     # Setting vars for threads follow up
-    SystemDiskIOThread = threading.currentThread()
+    values.SystemDiskIOThread = threading.currentThread()
 
     # Checking if some restrictions are in place for HDISKs list
     if values.HdiskRestricted == 'all':
@@ -1595,7 +1597,7 @@ def SystemHPMStat(ComparisonTimer):
         TODO: Describe the function, all vars and its content
     """
     # Intitalize thread for follow up
-    SystemHPMStatThread = threading.currentThread()
+    values.SystemHPMStatThread = threading.currentThread()
     
     # Generating current ELK timestamp for JSON message
     SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
@@ -1850,8 +1852,7 @@ def SystemProcess(ComparisonTimer):
     """
     
     # Setting vars for threads follow up
-    global SystemProcessThread
-    SystemProcessThread = threading.currentThread()
+    values.SystemProcessThread = threading.currentThread()
 
     # Generating current ELK timestamp for JSON message
     SeqIdTimestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")

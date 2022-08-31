@@ -15,9 +15,36 @@ from urllib.error import HTTPError
 
 # import 
 import values
-from samples import ConvertFileName, GenerateEphemeralID
 
 
+def GenerateEphemeralID():
+    """ Generate specific format of random number for ELK internal purpose.
+
+        Generating Ephemeral ID for current daemon execution
+        or new LPAR id file creation (random string format 8-4-4-4-12).
+    """
+
+    # Generating Ephemeral ID
+    # IMPROVEMENT / urandom can be converted into python style
+    ShortRandom2 = subprocess.Popen(
+        "tr -dc a-z0-9 </dev/urandom |  head -c 4", shell=True, stdout=subprocess.PIPE).stdout
+    ShortRandom2 = ShortRandom2.read().decode().replace("\n", "")
+    ShortRandom1 = subprocess.Popen(
+        "tr -dc a-z0-9 </dev/urandom |  head -c 4", shell=True, stdout=subprocess.PIPE).stdout
+    ShortRandom1 = ShortRandom1.read().decode().replace("\n", "")
+    ShortRandom3 = subprocess.Popen(
+        "tr -dc a-z0-9 </dev/urandom |  head -c 4", shell=True, stdout=subprocess.PIPE).stdout
+    ShortRandom3 = ShortRandom3.read().decode().replace("\n", "")
+    MediumRandom = subprocess.Popen(
+        "tr -dc a-z0-9 </dev/urandom |  head -c 8", shell=True, stdout=subprocess.PIPE).stdout
+    MediumRandom = MediumRandom.read().decode().replace("\n", "")
+    LongRandom = subprocess.Popen(
+        "tr -dc a-z0-9 </dev/urandom |  head -c 12", shell=True, stdout=subprocess.PIPE).stdout
+    LongRandom = LongRandom.read().decode().replace("\n", "")
+
+    # Formating string
+    values.EphemeralID = MediumRandom + "-" + ShortRandom1 + \
+        "-" + ShortRandom2 + "-" + ShortRandom3 + "-" + LongRandom
 
 
 def GetLPARInformations():
@@ -61,8 +88,7 @@ def GetLPARInformations():
     LPARPrtConf =  subprocess.Popen(CmdLine, shell=True, stdout=subprocess.PIPE).stdout
     LPARPrtConf = LPARPrtConf.read().decode().split('\n')
     values.LPARArch = LPARPrtConf[1]
-    values.LPARHost = LPARPrtConf[0]
-    
+    values.LPARHost = LPARPrtConf[0]    
     
     # Disabled for now as hosting frame has been moved to labels
     # Tags.append(LPARHost)
@@ -346,7 +372,7 @@ def SendToMetricbeat(BulkJSON, BulkSize):
 
         # Connect and send encoded data
         ELKAnswer = values.ElasticServerCnx.post(ElasticServerURL, data=BulkJSON.encode("utf8"), headers={
-                                          "Content-Type": "application/x-ndjson; charset=utf-8"}, auth=values.values.ELKCreds, timeout=5, verify=values.ELKCertificate)
+                                          "Content-Type": "application/x-ndjson; charset=utf-8"}, auth=values.ELKCreds, timeout=5, verify=values.ELKCertificate)
 
         # If the response was successful, no Exception will be raised
         ELKAnswer.raise_for_status()
@@ -451,7 +477,7 @@ def SendToFilebeat(BulkJSON, BulkSize):
 
         # Connect and send encoded data
         ELKAnswer = values.FilebeatServerCnx.post(FilebeatServerURL, data=BulkJSON.encode("utf8"), headers={
-                                           "Content-Type": "application/x-ndjson; charset=utf-8"}, auth=values.values.ELKCreds, timeout=5, verify=values.ELKCertificate)
+                                           "Content-Type": "application/x-ndjson; charset=utf-8"}, auth=values.ELKCreds, timeout=5, verify=values.ELKCertificate)
 
         # If the response was successful, no Exception will be raised
         ELKAnswer.raise_for_status()
@@ -556,7 +582,7 @@ def SendToLogstash(BulkJSON, BulkSize):
 
         # Connect and send encoded data
         ELKAnswer = values.LogstashServerCnx.post(LogstashServerURL, data=BulkJSON.encode("utf8"), headers={
-                                           "Content-Type": "application/x-ndjson; charset=utf-8"}, auth=values.values.ELKCreds, timeout=5, verify=values.ELKCertificate)
+                                           "Content-Type": "application/x-ndjson; charset=utf-8"}, auth=values.ELKCreds, timeout=5, verify=values.ELKCertificate)
 
         # If the response was successful, no Exception will be raised
         ELKAnswer.raise_for_status()
